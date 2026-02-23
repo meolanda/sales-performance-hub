@@ -1,1 +1,4 @@
 project_id = "katxpagyuglxooftmbnu"
+
+[functions.flowaccount-webhook]
+verify_jwt = false
