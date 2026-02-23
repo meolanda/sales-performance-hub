@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
-import { TrendingUp, Clock, CheckCircle, BarChart3 } from "lucide-react";
+import { TrendingUp, Clock, CheckCircle, BarChart3, Flame } from "lucide-react";
 
 interface Quotation {
   id: string;
@@ -63,13 +63,18 @@ const WORK_TYPES = [
   "งานอื่นๆ",
 ];
 
+function isCorporate(name: string | null): boolean {
+  if (!name) return false;
+  return /บริษัท|จำกัด|หจก|ห้างหุ้นส่วน|Co\.|Ltd|Corp|Inc/i.test(name);
+}
+
 export default function Index() {
   const [quotations, setQuotations] = useState<Quotation[]>([]);
   const [loading, setLoading] = useState(true);
   const [yearFilter, setYearFilter] = useState("all");
   const [monthFilter, setMonthFilter] = useState("all");
   const [workTypeFilter, setWorkTypeFilter] = useState("all");
-  const [customerFilter, setCustomerFilter] = useState("all");
+  const [customerTypeFilter, setCustomerTypeFilter] = useState("all");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -92,24 +97,17 @@ export default function Index() {
     return Array.from(years).sort().reverse();
   }, [quotations]);
 
-  const availableCustomers = useMemo(() => {
-    const customers = new Set<string>();
-    quotations.forEach((q) => {
-      if (q.customer_name) customers.add(q.customer_name);
-    });
-    return Array.from(customers).sort();
-  }, [quotations]);
-
   const filtered = useMemo(() => {
     return quotations.filter((q) => {
       const date = q.document_date || q.created_at;
       if (yearFilter !== "all" && date && !date.startsWith(yearFilter)) return false;
       if (monthFilter !== "all" && date && date.substring(5, 7) !== monthFilter) return false;
       if (workTypeFilter !== "all" && q.work_type !== workTypeFilter) return false;
-      if (customerFilter !== "all" && q.customer_name !== customerFilter) return false;
+      if (customerTypeFilter === "corporate" && !isCorporate(q.customer_name)) return false;
+      if (customerTypeFilter === "residential" && isCorporate(q.customer_name)) return false;
       return true;
     });
-  }, [quotations, yearFilter, monthFilter, workTypeFilter, customerFilter]);
+  }, [quotations, yearFilter, monthFilter, workTypeFilter, customerTypeFilter]);
 
   const actualSales = filtered
     .filter((q) => q.status === "approved")
@@ -120,6 +118,21 @@ export default function Index() {
   const totalQuotations = filtered.length;
   const pendingCount = filtered.filter((q) => q.status === "pending").length;
 
+  // Hot Leads: Pending, value > 100k, aging < 15 days
+  const hotLeads = useMemo(() => {
+    const now = new Date();
+    return filtered.filter((q) => {
+      if (q.status !== "pending") return false;
+      if (Number(q.net_total || 0) <= 100000) return false;
+      const ref = q.document_date || q.created_at;
+      if (!ref) return false;
+      const days = Math.floor((now.getTime() - new Date(ref).getTime()) / (1000 * 60 * 60 * 24));
+      return days < 15;
+    });
+  }, [filtered]);
+
+  const hotLeadsValue = hotLeads.reduce((sum, q) => sum + Number(q.net_total || 0), 0);
+
   // Status pie
   const statusMap: Record<string, number> = {};
   filtered.forEach((q) => {
@@ -127,7 +140,7 @@ export default function Index() {
   });
   const pieData = Object.entries(statusMap).map(([name, value]) => ({ name, value }));
 
-  // Work type breakdown (revenue by type)
+  // Work type breakdown
   const workTypeData = useMemo(() => {
     const map: Record<string, number> = {};
     filtered.forEach((q) => {
@@ -207,21 +220,20 @@ export default function Index() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={customerFilter} onValueChange={setCustomerFilter}>
+        <Select value={customerTypeFilter} onValueChange={setCustomerTypeFilter}>
           <SelectTrigger className="w-[220px] font-sarabun">
-            <SelectValue placeholder="ลูกค้า / Customer" />
+            <SelectValue placeholder="ประเภทลูกค้า / Customer Type" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">ทุกลูกค้า / All Customers</SelectItem>
-            {availableCustomers.map((c) => (
-              <SelectItem key={c} value={c}>{c}</SelectItem>
-            ))}
+            <SelectItem value="all">ทั้งหมด / All</SelectItem>
+            <SelectItem value="corporate">นิติบุคคล / Corporate</SelectItem>
+            <SelectItem value="residential">บุคคลธรรมดา / Residential</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card className="border-l-4" style={{ borderLeftColor: "hsl(142, 71%, 45%)" }}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-sarabun text-muted-foreground">
@@ -250,10 +262,26 @@ export default function Index() {
             <p className="text-xs text-muted-foreground font-sarabun mt-1">Pending รอปิดดีล</p>
           </CardContent>
         </Card>
+        <Card className="border-l-4" style={{ borderLeftColor: "hsl(0, 84%, 60%)" }}>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-sarabun text-muted-foreground">
+              🔥 Hot Leads
+            </CardTitle>
+            <Flame className="h-4 w-4" style={{ color: "hsl(0, 84%, 60%)" }} />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold font-sarabun" style={{ color: "hsl(0, 84%, 55%)" }}>
+              ฿{hotLeadsValue.toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+            </div>
+            <p className="text-xs text-muted-foreground font-sarabun mt-1">
+              {hotLeads.length} รายการ | Pending &gt;100K &lt;15 วัน
+            </p>
+          </CardContent>
+        </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-sarabun text-muted-foreground">
-              ใบเสนอราคาทั้งหมด / Total
+              ใบเสนอราคา / Total
             </CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -264,7 +292,7 @@ export default function Index() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-sarabun text-muted-foreground">
-              รอติดตาม / Pending Follow-up
+              รอติดตาม / Pending
             </CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +18,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, ArrowUpDown } from "lucide-react";
+import { Search, ArrowUpDown, Pencil } from "lucide-react";
+import QuotationEditDialog from "@/components/QuotationEditDialog";
 
 interface Quotation {
   id: string;
@@ -32,6 +33,10 @@ interface Quotation {
   net_total: number;
   status: string;
   created_at: string;
+  follow_up_status: string | null;
+  sales_priority: string | null;
+  next_follow_up_date: string | null;
+  internal_notes: string | null;
 }
 
 type SortKey = "net_total" | "aging";
@@ -39,10 +44,15 @@ type SortKey = "net_total" | "aging";
 function calcAging(dateStr: string | null, createdAt: string): number {
   const ref = dateStr || createdAt;
   if (!ref) return 0;
-  const issued = new Date(ref);
-  const now = new Date();
-  return Math.floor((now.getTime() - issued.getTime()) / (1000 * 60 * 60 * 24));
+  return Math.floor((new Date().getTime() - new Date(ref).getTime()) / (1000 * 60 * 60 * 24));
 }
+
+const priorityBadge = (p: string | null) => {
+  if (!p) return null;
+  if (p.startsWith("A")) return <Badge variant="destructive" className="font-sarabun text-xs">{p}</Badge>;
+  if (p.startsWith("B")) return <Badge variant="secondary" className="font-sarabun text-xs bg-yellow-100 text-yellow-800">{p}</Badge>;
+  return <Badge variant="outline" className="font-sarabun text-xs">{p}</Badge>;
+};
 
 export default function Quotations() {
   const [quotations, setQuotations] = useState<Quotation[]>([]);
@@ -51,18 +61,21 @@ export default function Quotations() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortKey, setSortKey] = useState<SortKey>("aging");
   const [sortAsc, setSortAsc] = useState(false);
+  const [editQuotation, setEditQuotation] = useState<Quotation | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const fetchQuotations = useCallback(async () => {
+    const { data } = await supabase
+      .from("quotations")
+      .select("*")
+      .order("created_at", { ascending: false });
+    setQuotations((data as Quotation[]) || []);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
-    const fetch = async () => {
-      const { data } = await supabase
-        .from("quotations")
-        .select("*")
-        .order("created_at", { ascending: false });
-      setQuotations((data as Quotation[]) || []);
-      setLoading(false);
-    };
-    fetch();
-  }, []);
+    fetchQuotations();
+  }, [fetchQuotations]);
 
   const filtered = useMemo(() => {
     let result = quotations.filter((q) => {
@@ -91,12 +104,8 @@ export default function Quotations() {
   }, [quotations, search, statusFilter, sortKey, sortAsc]);
 
   const toggleSort = (key: SortKey) => {
-    if (sortKey === key) {
-      setSortAsc(!sortAsc);
-    } else {
-      setSortKey(key);
-      setSortAsc(false);
-    }
+    if (sortKey === key) setSortAsc(!sortAsc);
+    else { setSortKey(key); setSortAsc(false); }
   };
 
   const statusVariant = (status: string) => {
@@ -113,6 +122,11 @@ export default function Quotations() {
     if (days > 30) return <Badge variant="destructive" className="font-sarabun">{days} วัน</Badge>;
     if (days > 14) return <Badge variant="secondary" className="font-sarabun bg-yellow-100 text-yellow-800">{days} วัน</Badge>;
     return <Badge variant="outline" className="font-sarabun">{days} วัน</Badge>;
+  };
+
+  const openEdit = (q: Quotation) => {
+    setEditQuotation(q);
+    setDialogOpen(true);
   };
 
   return (
@@ -146,18 +160,17 @@ export default function Quotations() {
       </div>
 
       {/* Table */}
-      <div className="rounded-md border border-border">
+      <div className="rounded-md border border-border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="font-sarabun">เลขที่เอกสาร / Doc No.</TableHead>
+              <TableHead className="font-sarabun">เลขที่ / Doc No.</TableHead>
               <TableHead className="font-sarabun">วันที่ / Date</TableHead>
               <TableHead className="font-sarabun">ลูกค้า / Customer</TableHead>
-              <TableHead className="font-sarabun">โปรเจ็ค / Project</TableHead>
-              <TableHead className="font-sarabun">ประเภทงาน / Work Type</TableHead>
+              <TableHead className="font-sarabun">ประเภทงาน / Type</TableHead>
               <TableHead className="font-sarabun text-right">
                 <Button variant="ghost" size="sm" onClick={() => toggleSort("net_total")} className="font-sarabun h-auto p-0">
-                  ยอดรวมสุทธิ / Net Total
+                  ยอดสุทธิ / Net
                   <ArrowUpDown className="ml-1 h-3 w-3" />
                 </Button>
               </TableHead>
@@ -168,18 +181,22 @@ export default function Quotations() {
                 </Button>
               </TableHead>
               <TableHead className="font-sarabun">สถานะ / Status</TableHead>
+              <TableHead className="font-sarabun">ติดตาม / Follow-up</TableHead>
+              <TableHead className="font-sarabun">Priority</TableHead>
+              <TableHead className="font-sarabun">นัดถัดไป / Next</TableHead>
+              <TableHead className="font-sarabun w-10"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center font-sarabun text-muted-foreground py-8">
+                <TableCell colSpan={11} className="text-center font-sarabun text-muted-foreground py-8">
                   กำลังโหลด... / Loading...
                 </TableCell>
               </TableRow>
             ) : filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center font-sarabun text-muted-foreground py-8">
+                <TableCell colSpan={11} className="text-center font-sarabun text-muted-foreground py-8">
                   ไม่พบข้อมูล / No data found
                 </TableCell>
               </TableRow>
@@ -190,9 +207,8 @@ export default function Quotations() {
                   <TableRow key={q.id} className={q.status === "pending" && aging > 30 ? "bg-destructive/5" : ""}>
                     <TableCell className="font-sarabun font-medium">{q.document_number}</TableCell>
                     <TableCell className="font-sarabun">{q.document_date || "-"}</TableCell>
-                    <TableCell className="font-sarabun">{q.customer_name || "-"}</TableCell>
-                    <TableCell className="font-sarabun">{q.project_name || "-"}</TableCell>
-                    <TableCell className="font-sarabun">{q.work_type || "-"}</TableCell>
+                    <TableCell className="font-sarabun max-w-[150px] truncate">{q.customer_name || "-"}</TableCell>
+                    <TableCell className="font-sarabun text-xs">{q.work_type || "-"}</TableCell>
                     <TableCell className="font-sarabun text-right">
                       ฿{Number(q.net_total).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
                     </TableCell>
@@ -202,6 +218,18 @@ export default function Quotations() {
                         {q.status}
                       </Badge>
                     </TableCell>
+                    <TableCell className="font-sarabun text-xs">
+                      {q.follow_up_status || <span className="text-muted-foreground">—</span>}
+                    </TableCell>
+                    <TableCell>{priorityBadge(q.sales_priority)}</TableCell>
+                    <TableCell className="font-sarabun text-xs">
+                      {q.next_follow_up_date || <span className="text-muted-foreground">—</span>}
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(q)}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 );
               })
@@ -209,6 +237,13 @@ export default function Quotations() {
           </TableBody>
         </Table>
       </div>
+
+      <QuotationEditDialog
+        quotation={editQuotation}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onSaved={fetchQuotations}
+      />
     </div>
   );
 }
