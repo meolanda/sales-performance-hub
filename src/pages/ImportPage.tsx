@@ -1,5 +1,5 @@
 import { useState } from "react";
-import * as XLSX from "xlsx";
+import readXlsxFile from "read-excel-file";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -8,17 +8,18 @@ import { supabase } from "@/integrations/supabase/client";
 function parseDate(s: string): string | null {
   if (!s) return null;
   const str = String(s).trim();
-  // DD/MM/YYYY
   const parts = str.split("/");
   if (parts.length === 3) {
     const [d, m, y] = parts;
     return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
   }
-  // Excel serial number
   if (/^\d+$/.test(str)) {
     const date = new Date((Number(str) - 25569) * 86400 * 1000);
     return date.toISOString().split("T")[0];
   }
+  // Try Date object
+  const d = new Date(str);
+  if (!isNaN(d.getTime())) return d.toISOString().split("T")[0];
   return null;
 }
 
@@ -44,18 +45,14 @@ export default function ImportPage() {
     setErrors([]);
 
     try {
-      // Fetch the pre-loaded file
       const res = await fetch("/data/quotations.xlsx");
-      const buf = await res.arrayBuffer();
-      const wb = XLSX.read(buf, { type: "array" });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
+      const blob = await res.blob();
+      const rows = await readXlsxFile(blob);
 
       // Find header row (contains "เลขที่เอกสาร")
       let headerIdx = -1;
       for (let i = 0; i < Math.min(rows.length, 20); i++) {
-        const row = rows[i] as string[];
-        if (row && row.some((c) => String(c).includes("เลขที่เอกสาร"))) {
+        if (rows[i] && rows[i].some((c) => String(c).includes("เลขที่เอกสาร"))) {
           headerIdx = i;
           break;
         }
@@ -66,38 +63,31 @@ export default function ImportPage() {
         return;
       }
 
-      // Data rows start after header
-      const dataRows = rows.slice(headerIdx + 1).filter((r) => {
-        const row = r as string[];
+      const dataRows = rows.slice(headerIdx + 1).filter((row) => {
         return row && row[1] && String(row[1]).startsWith("QT");
       });
 
       setTotal(dataRows.length);
       setStatus("importing");
 
-      // Map to records
-      const records = dataRows.map((r) => {
-        const row = r as (string | number)[];
-        return {
-          document_number: String(row[1] || ""),
-          document_date: parseDate(String(row[2] || "")),
-          customer_name: String(row[3] || "") || null,
-          project_name: String(row[4] || "") || null,
-          amount: Number(row[7]) || 0,
-          vat: Number(row[8]) || 0,
-          net_total: Number(row[9]) || 0,
-          status: mapStatus(String(row[12] || "")),
-        };
-      });
+      const records = dataRows.map((row) => ({
+        document_number: String(row[1] || ""),
+        document_date: parseDate(String(row[2] || "")),
+        customer_name: String(row[3] || "") || null,
+        project_name: String(row[4] || "") || null,
+        amount: Number(row[7]) || 0,
+        vat: Number(row[8]) || 0,
+        net_total: Number(row[9]) || 0,
+        status: mapStatus(String(row[12] || "")),
+      }));
 
-      // Batch upsert via edge function
       const batchSize = 100;
       let totalInserted = 0;
       const allErrors: string[] = [];
 
       for (let i = 0; i < records.length; i += batchSize) {
         const batch = records.slice(i, i + batchSize);
-        
+
         const { data, error } = await supabase.functions.invoke("import-quotations", {
           body: { records: batch },
         });
@@ -125,9 +115,7 @@ export default function ImportPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold font-sarabun">
-        นำเข้าข้อมูล / Import Data
-      </h1>
+      <h1 className="text-2xl font-bold font-sarabun">นำเข้าข้อมูล / Import Data</h1>
 
       <Card>
         <CardHeader>
@@ -137,10 +125,7 @@ export default function ImportPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-muted-foreground font-sarabun">
-            กดปุ่มด้านล่างเพื่อนำเข้าข้อมูล 1,451 รายการจากไฟล์ Excel ที่อัพโหลด
-          </p>
-          <p className="text-sm text-muted-foreground font-sarabun">
-            Press the button below to import 1,451 records from the uploaded Excel file.
+            กดปุ่มด้านล่างเพื่อนำเข้าข้อมูลจากไฟล์ Excel ที่อัพโหลด
           </p>
 
           <Button

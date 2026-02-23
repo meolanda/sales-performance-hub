@@ -1,8 +1,11 @@
-import { LayoutDashboard, FileText, Settings } from "lucide-react";
+import { LayoutDashboard, FileText, Settings, LogOut } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -18,6 +21,13 @@ const items = [
 ];
 
 export function AppSidebar() {
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+  };
+
   return (
     <Sidebar>
       <SidebarContent>
@@ -46,6 +56,16 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton onClick={handleLogout} className="hover:bg-destructive/10 text-muted-foreground hover:text-destructive">
+              <LogOut className="mr-2 h-4 w-4" />
+              <span className="font-sarabun text-sm">ออกจากระบบ / Logout</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }
