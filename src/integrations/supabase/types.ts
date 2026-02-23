@@ -14,7 +14,111 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      api_settings: {
+        Row: {
+          client_id: string | null
+          client_secret: string | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          provider: string
+          updated_at: string
+        }
+        Insert: {
+          client_id?: string | null
+          client_secret?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          provider?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string | null
+          client_secret?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          provider?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      quotations: {
+        Row: {
+          amount: number | null
+          created_at: string
+          customer_name: string | null
+          document_date: string | null
+          document_number: string
+          id: string
+          net_total: number | null
+          project_name: string | null
+          raw_payload: Json | null
+          status: string | null
+          updated_at: string
+          vat: number | null
+          work_type: string | null
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          customer_name?: string | null
+          document_date?: string | null
+          document_number: string
+          id?: string
+          net_total?: number | null
+          project_name?: string | null
+          raw_payload?: Json | null
+          status?: string | null
+          updated_at?: string
+          vat?: number | null
+          work_type?: string | null
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          customer_name?: string | null
+          document_date?: string | null
+          document_number?: string
+          id?: string
+          net_total?: number | null
+          project_name?: string | null
+          raw_payload?: Json | null
+          status?: string | null
+          updated_at?: string
+          vat?: number | null
+          work_type?: string | null
+        }
+        Relationships: []
+      }
+      webhook_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          event_type: string | null
+          id: string
+          payload: Json | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          event_type?: string | null
+          id?: string
+          payload?: Json | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          event_type?: string | null
+          id?: string
+          payload?: Json | null
+          status?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
