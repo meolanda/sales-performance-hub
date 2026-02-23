@@ -6,12 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-function deriveWorkType(projectName: string | null | undefined): string | null {
-  if (!projectName) return null;
-  if (projectName.includes("ล้าง")) return "งานล้างแอร์";
-  if (projectName.includes("PM")) return "งาน PM";
-  return null;
-}
+// work_type is now derived automatically by the DB trigger "trigger_derive_work_type"
 
 interface FlowAccountPayload {
   event?: string;
@@ -74,14 +69,11 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const workType = deriveWorkType(data.projectName);
-
     const mappedData = {
       document_number: data.documentNumber,
       document_date: data.documentDate || null,
       customer_name: data.customerName || null,
       project_name: data.projectName || null,
-      work_type: workType,
       amount: data.totalAmount ?? 0,
       vat: data.vatAmount ?? 0,
       net_total: data.netTotal ?? 0,
