@@ -78,11 +78,21 @@ export default function Index() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data } = await supabase
-        .from("quotations")
-        .select("id, document_number, net_total, status, document_date, created_at, work_type, customer_name")
-        .order("created_at", { ascending: false });
-      setQuotations(data || []);
+      const allData: Quotation[] = [];
+      let from = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data: page } = await supabase
+          .from("quotations")
+          .select("id, document_number, net_total, status, document_date, created_at, work_type, customer_name")
+          .order("created_at", { ascending: false })
+          .range(from, from + pageSize - 1);
+        if (!page || page.length === 0) break;
+        allData.push(...page);
+        if (page.length < pageSize) break;
+        from += pageSize;
+      }
+      setQuotations(allData);
       setLoading(false);
     };
     fetchData();
