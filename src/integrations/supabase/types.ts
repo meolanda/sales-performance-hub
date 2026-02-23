@@ -51,10 +51,14 @@ export type Database = {
           customer_name: string | null
           document_date: string | null
           document_number: string
+          follow_up_status: string | null
           id: string
+          internal_notes: string | null
           net_total: number | null
+          next_follow_up_date: string | null
           project_name: string | null
           raw_payload: Json | null
+          sales_priority: string | null
           status: string | null
           updated_at: string
           vat: number | null
@@ -66,10 +70,14 @@ export type Database = {
           customer_name?: string | null
           document_date?: string | null
           document_number: string
+          follow_up_status?: string | null
           id?: string
+          internal_notes?: string | null
           net_total?: number | null
+          next_follow_up_date?: string | null
           project_name?: string | null
           raw_payload?: Json | null
+          sales_priority?: string | null
           status?: string | null
           updated_at?: string
           vat?: number | null
@@ -81,10 +89,14 @@ export type Database = {
           customer_name?: string | null
           document_date?: string | null
           document_number?: string
+          follow_up_status?: string | null
           id?: string
+          internal_notes?: string | null
           net_total?: number | null
+          next_follow_up_date?: string | null
           project_name?: string | null
           raw_payload?: Json | null
+          sales_priority?: string | null
           status?: string | null
           updated_at?: string
           vat?: number | null
