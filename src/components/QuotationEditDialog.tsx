@@ -86,7 +86,7 @@ export default function QuotationEditDialog({ quotation, open, onOpenChange, onS
     if (!quotation) return;
     setSaving(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("quotations")
         .update({
           work_type: workType === "unassigned" ? null : workType,
@@ -95,15 +95,22 @@ export default function QuotationEditDialog({ quotation, open, onOpenChange, onS
           next_follow_up_date: nextFollowUpDate || null,
           internal_notes: internalNotes || null,
         })
-        .eq("id", quotation.id);
+        .eq("id", quotation.id)
+        .select();
 
       if (error) {
         toast.error("บันทึกไม่สำเร็จ: " + error.message);
         return;
       }
+      if (!data || data.length === 0) {
+        toast.error("ไม่พบข้อมูลที่อัพเดต — อาจเกิดจาก RLS policy");
+        return;
+      }
       toast.success("บันทึกสำเร็จ / Saved successfully");
-      onSaved();
       onOpenChange(false);
+      // Small delay to ensure DB consistency before refetch
+      await new Promise(resolve => setTimeout(resolve, 300));
+      onSaved();
     } catch (err: any) {
       toast.error("เกิดข้อผิดพลาด: " + (err?.message || "Unknown error"));
     } finally {
