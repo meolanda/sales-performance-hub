@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 
 export default function AuthPage() {
-  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -20,23 +19,10 @@ export default function AuthPage() {
     setLoading(true);
 
     try {
-      if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        toast({ title: "เข้าสู่ระบบสำเร็จ / Login successful" });
-        navigate("/");
-      } else {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: window.location.origin },
-        });
-        if (error) throw error;
-        toast({
-          title: "สมัครสมาชิกสำเร็จ / Signup successful",
-          description: "กรุณาตรวจสอบอีเมลเพื่อยืนยัน / Please check your email to confirm.",
-        });
-      }
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      toast({ title: "เข้าสู่ระบบสำเร็จ / Login successful" });
+      navigate("/");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Unknown error";
       toast({ title: "เกิดข้อผิดพลาด / Error", description: message, variant: "destructive" });
@@ -50,9 +36,7 @@ export default function AuthPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-sarabun">Quotation DIF</CardTitle>
-          <CardDescription className="font-sarabun">
-            {isLogin ? "เข้าสู่ระบบ / Login" : "สมัครสมาชิก / Sign Up"}
-          </CardDescription>
+          <CardDescription className="font-sarabun">เข้าสู่ระบบ / Login</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -80,24 +64,9 @@ export default function AuthPage() {
               />
             </div>
             <Button type="submit" className="w-full font-sarabun" disabled={loading}>
-              {loading
-                ? "กำลังดำเนินการ..."
-                : isLogin
-                ? "เข้าสู่ระบบ / Login"
-                : "สมัครสมาชิก / Sign Up"}
+              {loading ? "กำลังดำเนินการ..." : "เข้าสู่ระบบ / Login"}
             </Button>
           </form>
-          <div className="mt-4 text-center">
-            <button
-              type="button"
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-muted-foreground hover:text-foreground underline font-sarabun"
-            >
-              {isLogin
-                ? "ยังไม่มีบัญชี? สมัครสมาชิก / No account? Sign up"
-                : "มีบัญชีแล้ว? เข้าสู่ระบบ / Have an account? Login"}
-            </button>
-          </div>
         </CardContent>
       </Card>
     </div>
