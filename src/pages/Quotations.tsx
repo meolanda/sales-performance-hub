@@ -334,7 +334,14 @@ export default function Quotations() {
         quotation={editQuotation}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        onSaved={fetchQuotations}
+        onSaved={(updatedRecord?: any) => {
+          if (updatedRecord) {
+            // Optimistic local update — immediately reflect changes in the table
+            setQuotations(prev => prev.map(q => q.id === updatedRecord.id ? { ...q, ...updatedRecord } : q));
+          }
+          // Also refetch in background for consistency
+          fetchQuotations();
+        }}
       />
     </div>
   );

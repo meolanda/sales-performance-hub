@@ -61,7 +61,7 @@ interface Props {
   quotation: Quotation | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSaved: () => void;
+  onSaved: (updatedRecord?: any) => void;
 }
 
 export default function QuotationEditDialog({ quotation, open, onOpenChange, onSaved }: Props) {
@@ -115,8 +115,8 @@ export default function QuotationEditDialog({ quotation, open, onOpenChange, onS
       }
 
       const saved = data[0];
-      // CRITICAL: refetch table data BEFORE closing dialog to prevent unmount interrupting the fetch
-      await onSaved();
+      // Pass the saved record back for optimistic local update
+      onSaved(saved);
       onOpenChange(false);
       toast.success(`บันทึกสำเร็จ: ${saved.work_type || "-"} / ${saved.follow_up_status || "-"}`);
     } catch (err: any) {
