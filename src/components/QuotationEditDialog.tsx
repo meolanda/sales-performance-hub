@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -34,6 +34,15 @@ const SALES_PRIORITIES = [
   "C - Low",
 ];
 
+const WORK_TYPES = [
+  "งานระบบ Hood",
+  "งานล้างแอร์",
+  "งาน PM",
+  "งานซ่อมแอร์",
+  "งานติดตั้ง",
+  "งานอื่นๆ",
+];
+
 interface Quotation {
   id: string;
   document_number: string;
@@ -44,6 +53,7 @@ interface Quotation {
   sales_priority: string | null;
   next_follow_up_date: string | null;
   internal_notes: string | null;
+  work_type: string | null;
 }
 
 interface Props {
@@ -54,53 +64,54 @@ interface Props {
 }
 
 export default function QuotationEditDialog({ quotation, open, onOpenChange, onSaved }: Props) {
-  const [followUpStatus, setFollowUpStatus] = useState("");
-  const [salesPriority, setSalesPriority] = useState("");
+  const [workType, setWorkType] = useState("unassigned");
+  const [followUpStatus, setFollowUpStatus] = useState("unassigned");
+  const [salesPriority, setSalesPriority] = useState("unassigned");
   const [nextFollowUpDate, setNextFollowUpDate] = useState("");
   const [internalNotes, setInternalNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
-  // Sync state when quotation changes
-  const resetForm = (q: Quotation | null) => {
-    setFollowUpStatus(q?.follow_up_status || "");
-    setSalesPriority(q?.sales_priority || "");
-    setNextFollowUpDate(q?.next_follow_up_date || "");
-    setInternalNotes(q?.internal_notes || "");
-  };
-
-  // Reset on open
-  if (open && quotation) {
-    // Use a key-based approach instead
-  }
+  useEffect(() => {
+    if (open && quotation) {
+      setWorkType(quotation.work_type || "unassigned");
+      setFollowUpStatus(quotation.follow_up_status || "unassigned");
+      setSalesPriority(quotation.sales_priority || "unassigned");
+      setNextFollowUpDate(quotation.next_follow_up_date || "");
+      setInternalNotes(quotation.internal_notes || "");
+    }
+  }, [open, quotation]);
 
   const handleSave = async () => {
     if (!quotation) return;
     setSaving(true);
-    const { error } = await supabase
-      .from("quotations")
-      .update({
-        follow_up_status: followUpStatus || null,
-        sales_priority: salesPriority || null,
-        next_follow_up_date: nextFollowUpDate || null,
-        internal_notes: internalNotes || null,
-      })
-      .eq("id", quotation.id);
+    try {
+      const { error } = await supabase
+        .from("quotations")
+        .update({
+          work_type: workType === "unassigned" ? null : workType,
+          follow_up_status: followUpStatus === "unassigned" ? null : followUpStatus,
+          sales_priority: salesPriority === "unassigned" ? null : salesPriority,
+          next_follow_up_date: nextFollowUpDate || null,
+          internal_notes: internalNotes || null,
+        })
+        .eq("id", quotation.id);
 
-    setSaving(false);
-    if (error) {
-      toast.error("บันทึกไม่สำเร็จ / Save failed: " + error.message);
-    } else {
+      if (error) {
+        toast.error("บันทึกไม่สำเร็จ: " + error.message);
+        return;
+      }
       toast.success("บันทึกสำเร็จ / Saved successfully");
       onSaved();
       onOpenChange(false);
+    } catch (err: any) {
+      toast.error("เกิดข้อผิดพลาด: " + (err?.message || "Unknown error"));
+    } finally {
+      setSaving(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => {
-      if (v && quotation) resetForm(quotation);
-      onOpenChange(v);
-    }}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="font-sarabun">
@@ -114,13 +125,28 @@ export default function QuotationEditDialog({ quotation, open, onOpenChange, onS
           </div>
 
           <div className="space-y-2">
+            <Label className="font-sarabun">ประเภทงาน / Work Type</Label>
+            <Select value={workType} onValueChange={setWorkType}>
+              <SelectTrigger className="font-sarabun">
+                <SelectValue placeholder="เลือกประเภทงาน..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unassigned">— ยังไม่ระบุ —</SelectItem>
+                {WORK_TYPES.map((t) => (
+                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
             <Label className="font-sarabun">สถานะติดตาม / Follow-up Status</Label>
             <Select value={followUpStatus} onValueChange={setFollowUpStatus}>
               <SelectTrigger className="font-sarabun">
                 <SelectValue placeholder="เลือกสถานะ..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">— ยังไม่ระบุ —</SelectItem>
+                <SelectItem value="unassigned">— ยังไม่ระบุ —</SelectItem>
                 {FOLLOW_UP_STATUSES.map((s) => (
                   <SelectItem key={s} value={s}>{s}</SelectItem>
                 ))}
@@ -135,7 +161,7 @@ export default function QuotationEditDialog({ quotation, open, onOpenChange, onS
                 <SelectValue placeholder="เลือก Priority..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">— ยังไม่ระบุ —</SelectItem>
+                <SelectItem value="unassigned">— ยังไม่ระบุ —</SelectItem>
                 {SALES_PRIORITIES.map((p) => (
                   <SelectItem key={p} value={p}>{p}</SelectItem>
                 ))}
