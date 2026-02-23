@@ -85,32 +85,40 @@ export default function QuotationEditDialog({ quotation, open, onOpenChange, onS
   const handleSave = async () => {
     if (!quotation) return;
     setSaving(true);
+
+    const updatePayload = {
+      work_type: workType === "unassigned" ? null : workType,
+      follow_up_status: followUpStatus === "unassigned" ? null : followUpStatus,
+      sales_priority: salesPriority === "unassigned" ? null : salesPriority,
+      next_follow_up_date: nextFollowUpDate || null,
+      internal_notes: internalNotes || null,
+    };
+
+    console.log("[QuotationEdit] Saving ID:", quotation.id, "Payload:", JSON.stringify(updatePayload));
+
     try {
       const { data, error } = await supabase
         .from("quotations")
-        .update({
-          work_type: workType === "unassigned" ? null : workType,
-          follow_up_status: followUpStatus === "unassigned" ? null : followUpStatus,
-          sales_priority: salesPriority === "unassigned" ? null : salesPriority,
-          next_follow_up_date: nextFollowUpDate || null,
-          internal_notes: internalNotes || null,
-        })
+        .update(updatePayload)
         .eq("id", quotation.id)
         .select();
+
+      console.log("[QuotationEdit] Response data:", JSON.stringify(data), "error:", error);
 
       if (error) {
         toast.error("บันทึกไม่สำเร็จ: " + error.message);
         return;
       }
       if (!data || data.length === 0) {
-        toast.error("ไม่พบข้อมูลที่อัพเดต — อาจเกิดจาก RLS policy");
+        toast.error("ไม่พบข้อมูลที่อัพเดต — อาจเกิดจาก RLS policy หรือ ID ไม่ตรง");
         return;
       }
-      toast.success("บันทึกสำเร็จ / Saved successfully");
+
+      const saved = data[0];
+      toast.success(`บันทึกสำเร็จ: ${saved.work_type || "-"} / ${saved.follow_up_status || "-"}`);
       onOpenChange(false);
-      // Small delay to ensure DB consistency before refetch
-      await new Promise(resolve => setTimeout(resolve, 300));
-      onSaved();
+      // Await refetch to ensure table updates
+      await onSaved();
     } catch (err: any) {
       toast.error("เกิดข้อผิดพลาด: " + (err?.message || "Unknown error"));
     } finally {
