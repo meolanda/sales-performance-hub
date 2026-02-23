@@ -71,8 +71,8 @@ function isCorporate(name: string | null): boolean {
 export default function Index() {
   const [quotations, setQuotations] = useState<Quotation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [yearFilter, setYearFilter] = useState("all");
-  const [monthFilter, setMonthFilter] = useState("all");
+  const [yearFilter, setYearFilter] = useState(String(new Date().getFullYear()));
+  const [monthFilter, setMonthFilter] = useState(String(new Date().getMonth() + 1).padStart(2, "0"));
   const [workTypeFilter, setWorkTypeFilter] = useState("all");
   const [customerTypeFilter, setCustomerTypeFilter] = useState("all");
 
