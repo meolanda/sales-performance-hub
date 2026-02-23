@@ -115,10 +115,10 @@ export default function QuotationEditDialog({ quotation, open, onOpenChange, onS
       }
 
       const saved = data[0];
-      toast.success(`บันทึกสำเร็จ: ${saved.work_type || "-"} / ${saved.follow_up_status || "-"}`);
-      onOpenChange(false);
-      // Await refetch to ensure table updates
+      // CRITICAL: refetch table data BEFORE closing dialog to prevent unmount interrupting the fetch
       await onSaved();
+      onOpenChange(false);
+      toast.success(`บันทึกสำเร็จ: ${saved.work_type || "-"} / ${saved.follow_up_status || "-"}`);
     } catch (err: any) {
       toast.error("เกิดข้อผิดพลาด: " + (err?.message || "Unknown error"));
     } finally {
@@ -128,11 +128,12 @@ export default function QuotationEditDialog({ quotation, open, onOpenChange, onS
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg" aria-describedby="edit-dialog-desc">
         <DialogHeader>
           <DialogTitle className="font-sarabun">
             ติดตามงาน / Follow-up — {quotation?.document_number}
           </DialogTitle>
+          <p id="edit-dialog-desc" className="text-sm text-muted-foreground sr-only">แก้ไขข้อมูลใบเสนอราคา</p>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
