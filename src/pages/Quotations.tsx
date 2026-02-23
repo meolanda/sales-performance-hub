@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -17,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search } from "lucide-react";
+import { Search, ArrowUpDown } from "lucide-react";
 
 interface Quotation {
   id: string;
@@ -33,11 +34,23 @@ interface Quotation {
   created_at: string;
 }
 
+type SortKey = "net_total" | "aging";
+
+function calcAging(dateStr: string | null, createdAt: string): number {
+  const ref = dateStr || createdAt;
+  if (!ref) return 0;
+  const issued = new Date(ref);
+  const now = new Date();
+  return Math.floor((now.getTime() - issued.getTime()) / (1000 * 60 * 60 * 24));
+}
+
 export default function Quotations() {
   const [quotations, setQuotations] = useState<Quotation[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [sortKey, setSortKey] = useState<SortKey>("aging");
+  const [sortAsc, setSortAsc] = useState(false);
 
   useEffect(() => {
     const fetch = async () => {
@@ -51,33 +64,61 @@ export default function Quotations() {
     fetch();
   }, []);
 
-  const filtered = quotations.filter((q) => {
-    const matchSearch =
-      !search ||
-      q.document_number.toLowerCase().includes(search.toLowerCase()) ||
-      q.customer_name?.toLowerCase().includes(search.toLowerCase()) ||
-      q.project_name?.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = statusFilter === "all" || q.status === statusFilter;
-    return matchSearch && matchStatus;
-  });
+  const filtered = useMemo(() => {
+    let result = quotations.filter((q) => {
+      const matchSearch =
+        !search ||
+        q.document_number.toLowerCase().includes(search.toLowerCase()) ||
+        q.customer_name?.toLowerCase().includes(search.toLowerCase()) ||
+        q.project_name?.toLowerCase().includes(search.toLowerCase());
+      const matchStatus = statusFilter === "all" || q.status === statusFilter;
+      return matchSearch && matchStatus;
+    });
+
+    result.sort((a, b) => {
+      let valA: number, valB: number;
+      if (sortKey === "net_total") {
+        valA = Number(a.net_total || 0);
+        valB = Number(b.net_total || 0);
+      } else {
+        valA = calcAging(a.document_date, a.created_at);
+        valB = calcAging(b.document_date, b.created_at);
+      }
+      return sortAsc ? valA - valB : valB - valA;
+    });
+
+    return result;
+  }, [quotations, search, statusFilter, sortKey, sortAsc]);
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortKey(key);
+      setSortAsc(false);
+    }
+  };
 
   const statusVariant = (status: string) => {
     switch (status) {
-      case "approved":
-        return "default" as const;
-      case "pending":
-        return "secondary" as const;
-      case "rejected":
-        return "destructive" as const;
-      default:
-        return "outline" as const;
+      case "approved": return "default" as const;
+      case "pending": return "secondary" as const;
+      case "rejected": return "destructive" as const;
+      default: return "outline" as const;
     }
+  };
+
+  const agingBadge = (days: number, status: string) => {
+    if (status !== "pending") return <span className="font-sarabun text-muted-foreground">{days} วัน</span>;
+    if (days > 30) return <Badge variant="destructive" className="font-sarabun">{days} วัน</Badge>;
+    if (days > 14) return <Badge variant="secondary" className="font-sarabun bg-yellow-100 text-yellow-800">{days} วัน</Badge>;
+    return <Badge variant="outline" className="font-sarabun">{days} วัน</Badge>;
   };
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold font-sarabun text-foreground">
-        ใบเสนอราคา / Quotations
+        ติดตามใบเสนอราคา / Sales Tracking
       </h1>
 
       {/* Filters */}
@@ -114,41 +155,56 @@ export default function Quotations() {
               <TableHead className="font-sarabun">ลูกค้า / Customer</TableHead>
               <TableHead className="font-sarabun">โปรเจ็ค / Project</TableHead>
               <TableHead className="font-sarabun">ประเภทงาน / Work Type</TableHead>
-              <TableHead className="font-sarabun text-right">ยอดรวมสุทธิ / Net Total</TableHead>
+              <TableHead className="font-sarabun text-right">
+                <Button variant="ghost" size="sm" onClick={() => toggleSort("net_total")} className="font-sarabun h-auto p-0">
+                  ยอดรวมสุทธิ / Net Total
+                  <ArrowUpDown className="ml-1 h-3 w-3" />
+                </Button>
+              </TableHead>
+              <TableHead className="font-sarabun">
+                <Button variant="ghost" size="sm" onClick={() => toggleSort("aging")} className="font-sarabun h-auto p-0">
+                  อายุ / Aging
+                  <ArrowUpDown className="ml-1 h-3 w-3" />
+                </Button>
+              </TableHead>
               <TableHead className="font-sarabun">สถานะ / Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center font-sarabun text-muted-foreground py-8">
+                <TableCell colSpan={8} className="text-center font-sarabun text-muted-foreground py-8">
                   กำลังโหลด... / Loading...
                 </TableCell>
               </TableRow>
             ) : filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center font-sarabun text-muted-foreground py-8">
+                <TableCell colSpan={8} className="text-center font-sarabun text-muted-foreground py-8">
                   ไม่พบข้อมูล / No data found
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((q) => (
-                <TableRow key={q.id}>
-                  <TableCell className="font-sarabun font-medium">{q.document_number}</TableCell>
-                  <TableCell className="font-sarabun">{q.document_date || "-"}</TableCell>
-                  <TableCell className="font-sarabun">{q.customer_name || "-"}</TableCell>
-                  <TableCell className="font-sarabun">{q.project_name || "-"}</TableCell>
-                  <TableCell className="font-sarabun">{q.work_type || "-"}</TableCell>
-                  <TableCell className="font-sarabun text-right">
-                    ฿{Number(q.net_total).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={statusVariant(q.status)} className="font-sarabun">
-                      {q.status}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))
+              filtered.map((q) => {
+                const aging = calcAging(q.document_date, q.created_at);
+                return (
+                  <TableRow key={q.id} className={q.status === "pending" && aging > 30 ? "bg-destructive/5" : ""}>
+                    <TableCell className="font-sarabun font-medium">{q.document_number}</TableCell>
+                    <TableCell className="font-sarabun">{q.document_date || "-"}</TableCell>
+                    <TableCell className="font-sarabun">{q.customer_name || "-"}</TableCell>
+                    <TableCell className="font-sarabun">{q.project_name || "-"}</TableCell>
+                    <TableCell className="font-sarabun">{q.work_type || "-"}</TableCell>
+                    <TableCell className="font-sarabun text-right">
+                      ฿{Number(q.net_total).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+                    </TableCell>
+                    <TableCell>{agingBadge(aging, q.status)}</TableCell>
+                    <TableCell>
+                      <Badge variant={statusVariant(q.status)} className="font-sarabun">
+                        {q.status}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
