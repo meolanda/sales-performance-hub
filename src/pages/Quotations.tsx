@@ -54,22 +54,50 @@ const priorityBadge = (p: string | null) => {
   return <Badge variant="outline" className="font-sarabun text-xs">{p}</Badge>;
 };
 
+const WORK_TYPES = [
+  "งานระบบ Hood",
+  "งานล้างแอร์",
+  "งาน PM",
+  "งานซ่อมแอร์",
+  "งานติดตั้ง",
+  "งานอื่นๆ",
+];
+
+function isCorporate(name: string | null): boolean {
+  if (!name) return false;
+  return /บริษัท|จำกัด|หจก|ห้างหุ้นส่วน|Co\.|Ltd|Corp|Inc/i.test(name);
+}
+
 export default function Quotations() {
   const [quotations, setQuotations] = useState<Quotation[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [sortKey, setSortKey] = useState<SortKey>("aging");
+  const [yearFilter, setYearFilter] = useState(String(new Date().getFullYear()));
+  const [monthFilter, setMonthFilter] = useState(String(new Date().getMonth() + 1).padStart(2, "0"));
+  const [workTypeFilter, setWorkTypeFilter] = useState("all");
+  const [customerTypeFilter, setCustomerTypeFilter] = useState("all");
+  const [sortKey, setSortKey] = useState<SortKey>("net_total");
   const [sortAsc, setSortAsc] = useState(false);
   const [editQuotation, setEditQuotation] = useState<Quotation | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const fetchQuotations = useCallback(async () => {
-    const { data } = await supabase
-      .from("quotations")
-      .select("*")
-      .order("created_at", { ascending: false });
-    setQuotations((data as Quotation[]) || []);
+    const allData: Quotation[] = [];
+    let from = 0;
+    const pageSize = 1000;
+    while (true) {
+      const { data: page } = await supabase
+        .from("quotations")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .range(from, from + pageSize - 1);
+      if (!page || page.length === 0) break;
+      allData.push(...(page as Quotation[]));
+      if (page.length < pageSize) break;
+      from += pageSize;
+    }
+    setQuotations(allData);
     setLoading(false);
   }, []);
 
@@ -77,8 +105,23 @@ export default function Quotations() {
     fetchQuotations();
   }, [fetchQuotations]);
 
+  const availableYears = useMemo(() => {
+    const years = new Set<string>();
+    quotations.forEach((q) => {
+      const date = q.document_date || q.created_at;
+      if (date) years.add(date.substring(0, 4));
+    });
+    return Array.from(years).sort().reverse();
+  }, [quotations]);
+
   const filtered = useMemo(() => {
     let result = quotations.filter((q) => {
+      const date = q.document_date || q.created_at;
+      if (yearFilter !== "all" && date && !date.startsWith(yearFilter)) return false;
+      if (monthFilter !== "all" && date && date.substring(5, 7) !== monthFilter) return false;
+      if (workTypeFilter !== "all" && q.work_type !== workTypeFilter) return false;
+      if (customerTypeFilter === "corporate" && !isCorporate(q.customer_name)) return false;
+      if (customerTypeFilter === "residential" && isCorporate(q.customer_name)) return false;
       const matchSearch =
         !search ||
         q.document_number.toLowerCase().includes(search.toLowerCase()) ||
@@ -101,7 +144,7 @@ export default function Quotations() {
     });
 
     return result;
-  }, [quotations, search, statusFilter, sortKey, sortAsc]);
+  }, [quotations, search, statusFilter, yearFilter, monthFilter, workTypeFilter, customerTypeFilter, sortKey, sortAsc]);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortAsc(!sortAsc);
@@ -135,7 +178,56 @@ export default function Quotations() {
         ติดตามใบเสนอราคา / Sales Tracking
       </h1>
 
-      {/* Filters */}
+      {/* Advanced Filters */}
+      <div className="flex flex-wrap gap-3">
+        <Select value={yearFilter} onValueChange={setYearFilter}>
+          <SelectTrigger className="w-[140px] font-sarabun">
+            <SelectValue placeholder="ปี / Year" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">ทุกปี / All Years</SelectItem>
+            {availableYears.map((y) => (
+              <SelectItem key={y} value={y}>{y}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={monthFilter} onValueChange={setMonthFilter}>
+          <SelectTrigger className="w-[140px] font-sarabun">
+            <SelectValue placeholder="เดือน / Month" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">ทุกเดือน / All</SelectItem>
+            {Array.from({ length: 12 }, (_, i) => {
+              const m = String(i + 1).padStart(2, "0");
+              const thaiMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+              return <SelectItem key={m} value={m}>{thaiMonths[i]} / {m}</SelectItem>;
+            })}
+          </SelectContent>
+        </Select>
+        <Select value={workTypeFilter} onValueChange={setWorkTypeFilter}>
+          <SelectTrigger className="w-[200px] font-sarabun">
+            <SelectValue placeholder="ประเภทงาน / Work Type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">ทุกประเภท / All Types</SelectItem>
+            {WORK_TYPES.map((t) => (
+              <SelectItem key={t} value={t}>{t}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={customerTypeFilter} onValueChange={setCustomerTypeFilter}>
+          <SelectTrigger className="w-[220px] font-sarabun">
+            <SelectValue placeholder="ประเภทลูกค้า / Customer Type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">ทั้งหมด / All</SelectItem>
+            <SelectItem value="corporate">นิติบุคคล / Corporate</SelectItem>
+            <SelectItem value="residential">บุคคลธรรมดา / Residential</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Search & Status */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
