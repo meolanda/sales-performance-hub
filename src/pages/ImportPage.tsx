@@ -5,19 +5,46 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 
-function parseDate(s: string): string | null {
-  if (!s) return null;
-  const str = String(s).trim();
-  const parts = str.split("/");
-  if (parts.length === 3) {
-    const [d, m, y] = parts;
-    return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
-  }
-  if (/^\d+$/.test(str)) {
-    const date = new Date((Number(str) - 25569) * 86400 * 1000);
+function parseDate(value: unknown): string | null {
+  if (!value) return null;
+
+  // Handle Excel serial dates
+  if (typeof value === "number" && value > 1 && value < 100000) {
+    const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+    const date = new Date(excelEpoch.getTime() + value * 86400000);
     return date.toISOString().split("T")[0];
   }
-  // Try Date object
+
+  const str = String(value).trim();
+  if (!str) return null;
+
+  // Handle DD/MM/YYYY with possible Thai Buddhist Era year (25xx → subtract 543)
+  const slashMatch = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (slashMatch) {
+    const day = parseInt(slashMatch[1], 10);
+    const month = parseInt(slashMatch[2], 10);
+    let year = parseInt(slashMatch[3], 10);
+    // Thai Buddhist Era: years >= 2400 are BE (e.g., 2568 → 2025)
+    if (year >= 2400) year -= 543;
+    // Two-digit year
+    if (year < 100) year += 2000;
+    const d = new Date(Date.UTC(year, month - 1, day));
+    if (!isNaN(d.getTime()) && d.getFullYear() > 1900) {
+      return d.toISOString().split("T")[0];
+    }
+  }
+
+  // Handle YYYY-MM-DD (ISO)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+
+  // Handle Excel serial as string
+  if (/^\d+$/.test(str)) {
+    const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+    const date = new Date(excelEpoch.getTime() + Number(str) * 86400000);
+    return date.toISOString().split("T")[0];
+  }
+
+  // Try Date constructor
   const d = new Date(str);
   if (!isNaN(d.getTime())) return d.toISOString().split("T")[0];
   return null;
