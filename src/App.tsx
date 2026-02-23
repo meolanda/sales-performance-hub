@@ -7,6 +7,7 @@ import { Layout } from "@/components/Layout";
 import Index from "./pages/Index";
 import Quotations from "./pages/Quotations";
 import SettingsPage from "./pages/SettingsPage";
+import ImportPage from "./pages/ImportPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/quotations" element={<Quotations />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/import" element={<ImportPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Layout>

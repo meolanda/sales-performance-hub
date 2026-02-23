@@ -2,3 +2,6 @@ project_id = "katxpagyuglxooftmbnu"
 
 [functions.flowaccount-webhook]
 verify_jwt = false
+
+[functions.import-quotations]
+verify_jwt = false
