@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.import-quotations]
 verify_jwt = false
+
+[functions.telegram-alert-closed-won]
+verify_jwt = false
+
+[functions.telegram-morning-briefing]
+verify_jwt = false
