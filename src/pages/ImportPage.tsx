@@ -122,7 +122,7 @@ export default function ImportPage() {
         if (error) {
           allErrors.push(`Batch ${i}: ${error.message}`);
         } else if (data) {
-          totalInserted += data.inserted || batch.length;
+          totalInserted += (data.inserted || 0) + (data.updated || 0);
           if (data.errors?.length) {
             allErrors.push(...data.errors);
           }
