@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.telegram-morning-briefing]
 verify_jwt = false
+
+[functions.telegram-daily-wrapup]
+verify_jwt = false
