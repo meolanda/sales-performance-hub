@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, ArrowUpDown, Pencil } from "lucide-react";
+import { Search, ArrowUpDown, Pencil, Download } from "lucide-react";
 import QuotationEditDialog from "@/components/QuotationEditDialog";
 
 interface Quotation {
@@ -151,6 +151,32 @@ export default function Quotations() {
     else { setSortKey(key); setSortAsc(false); }
   };
 
+  const exportCSV = useCallback(() => {
+    const headers = ["เลขที่เอกสาร", "วันที่", "ลูกค้า", "โปรเจกต์", "ประเภทงาน", "ยอดสุทธิ", "สถานะ", "ติดตาม", "Priority", "นัดถัดไป", "บันทึก"];
+    const rows = filtered.map(q => [
+      q.document_number,
+      q.document_date || "",
+      q.customer_name || "",
+      q.project_name || "",
+      q.work_type || "",
+      q.net_total,
+      q.status,
+      q.follow_up_status || "",
+      q.sales_priority || "",
+      q.next_follow_up_date || "",
+      (q.internal_notes || "").replace(/[\n\r]+/g, " "),
+    ]);
+    const bom = "\uFEFF";
+    const csv = bom + [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `quotations_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [filtered]);
+
   const statusVariant = (status: string) => {
     switch (status) {
       case "approved": return "default" as const;
@@ -249,6 +275,10 @@ export default function Quotations() {
             <SelectItem value="rejected">ปฏิเสธ / Rejected</SelectItem>
           </SelectContent>
         </Select>
+        <Button variant="outline" onClick={exportCSV} className="font-sarabun gap-2">
+          <Download className="h-4 w-4" />
+          Export CSV ({filtered.length})
+        </Button>
       </div>
 
       {/* Table */}
