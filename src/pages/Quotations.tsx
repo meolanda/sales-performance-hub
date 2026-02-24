@@ -339,8 +339,8 @@ export default function Quotations() {
             // Optimistic local update — immediately reflect changes in the table
             setQuotations(prev => prev.map(q => q.id === updatedRecord.id ? { ...q, ...updatedRecord } : q));
           }
-          // Also refetch in background for consistency
-          fetchQuotations();
+          // Delay refetch slightly to avoid overwriting optimistic update with stale data
+          setTimeout(() => fetchQuotations(), 1500);
         }}
       />
     </div>
