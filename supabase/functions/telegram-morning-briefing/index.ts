@@ -9,16 +9,22 @@ function formatCurrency(amount: number): string {
   return "฿" + amount.toLocaleString("th-TH", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
+const thaiMonths = [
+  "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+  "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม",
+];
+
+function getBangkokNow(): Date {
+  const now = new Date();
+  return new Date(now.toLocaleString("en-US", { timeZone: "Asia/Bangkok" }));
+}
+
 async function sendTelegramMessage(botToken: string, chatId: string, text: string) {
   const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text,
-      parse_mode: "HTML",
-    }),
+    body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
   });
   return res.json();
 }
@@ -35,7 +41,6 @@ Deno.serve(async (req: Request) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     if (!botToken || !chatId) {
-      console.error("Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID");
       return new Response(JSON.stringify({ error: "Missing Telegram credentials" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -43,51 +48,54 @@ Deno.serve(async (req: Request) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
+    const bkk = getBangkokNow();
+    const year = bkk.getFullYear();
+    const month = bkk.getMonth(); // 0-indexed
+    const day = bkk.getDate();
 
-    // 1. Total Pipeline: net_total where status != 'approved' and follow_up_status != 'ปิดการขายไม่ได้'
-    const { data: pipelineData, error: pipelineError } = await supabase
+    // Current month range
+    const monthStart = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+    const nextMonth = month === 11 ? `${year + 1}-01-01` : `${year}-${String(month + 2).padStart(2, "0")}-01`;
+
+    // 1. Total Pipeline this month
+    const { data: pipelineData } = await supabase
       .from("quotations")
       .select("net_total")
       .neq("status", "approved")
-      .or("follow_up_status.is.null,follow_up_status.neq.ปิดการขายไม่ได้");
+      .or("follow_up_status.is.null,follow_up_status.neq.ปิดการขายไม่ได้")
+      .gte("document_date", monthStart)
+      .lt("document_date", nextMonth);
 
-    if (pipelineError) {
-      console.error("Pipeline query error:", pipelineError.message);
-    }
+    const totalPipeline = (pipelineData || []).reduce((sum, r) => sum + (Number(r.net_total) || 0), 0);
 
-    const totalPipeline = (pipelineData || []).reduce(
-      (sum, row) => sum + (Number(row.net_total) || 0),
-      0
-    );
-
-    // 2. Hot Leads: net_total > 100000 AND created within last 15 days
-    const fifteenDaysAgo = new Date();
+    // 2. Hot Leads this month (net_total > 100k, created within last 15 days)
+    const fifteenDaysAgo = new Date(bkk);
     fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
     const cutoffDate = fifteenDaysAgo.toISOString().split("T")[0];
 
-    const { data: hotLeadsData, error: hotLeadsError } = await supabase
+    const { data: hotLeadsData } = await supabase
       .from("quotations")
       .select("id")
       .gt("net_total", 100000)
-      .gte("document_date", cutoffDate);
-
-    if (hotLeadsError) {
-      console.error("Hot leads query error:", hotLeadsError.message);
-    }
+      .gte("document_date", cutoffDate)
+      .gte("document_date", monthStart)
+      .lt("document_date", nextMonth);
 
     const hotLeadsCount = (hotLeadsData || []).length;
 
-    // 3. Send Telegram message
+    // 3. Format Thai date
+    const dateStr = `${day} ${thaiMonths[month]} ${year}`;
+
     const message =
-      `📊 สรุปเป้าหมายประจำวัน 📊\n\n` +
-      `💰 โอกาสขาย (Pipeline): <b>${formatCurrency(totalPipeline)}</b>\n` +
+      `📊 สรุปเป้าหมายประจำวันที่ ${dateStr} 📊\n\n` +
+      `💰 โอกาสขายเดือนนี้ (Pipeline): <b>${formatCurrency(totalPipeline)}</b>\n` +
       `🔥 Hot Leads ด่วน: <b>${hotLeadsCount} งาน</b>\n\n` +
       `👉 ลุยกันเลยทีมเซลส์!`;
 
     const result = await sendTelegramMessage(botToken, chatId, message);
     console.log("Telegram response:", JSON.stringify(result));
 
-    return new Response(JSON.stringify({ message: "Briefing sent", pipeline: totalPipeline, hotLeads: hotLeadsCount, telegram: result }), {
+    return new Response(JSON.stringify({ message: "Briefing sent", date: dateStr, pipeline: totalPipeline, hotLeads: hotLeadsCount, telegram: result }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
