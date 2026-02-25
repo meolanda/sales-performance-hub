@@ -48,8 +48,8 @@ Deno.serve(async (req: Request) => {
     const { data: pipelineData, error: pipelineError } = await supabase
       .from("quotations")
       .select("net_total")
-      .not("status", "eq", "approved")
-      .not("follow_up_status", "eq", "ปิดการขายไม่ได้");
+      .neq("status", "approved")
+      .or("follow_up_status.is.null,follow_up_status.neq.ปิดการขายไม่ได้");
 
     if (pipelineError) {
       console.error("Pipeline query error:", pipelineError.message);
