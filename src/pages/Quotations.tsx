@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import readXlsxFile from "read-excel-file";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,8 +19,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, ArrowUpDown, Pencil, Download } from "lucide-react";
+import { Search, ArrowUpDown, Pencil, Download, Upload } from "lucide-react";
 import QuotationEditDialog from "@/components/QuotationEditDialog";
+import { useToast } from "@/hooks/use-toast";
 
 interface Quotation {
   id: string;
@@ -68,10 +70,53 @@ function isCorporate(name: string | null): boolean {
   return /บริษัท|จำกัด|หจก|ห้างหุ้นส่วน|Co\.|Ltd|Corp|Inc/i.test(name);
 }
 
+function parseDate(value: unknown): string | null {
+  if (!value) return null;
+  if (typeof value === "number" && value > 1 && value < 100000) {
+    const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+    const date = new Date(excelEpoch.getTime() + value * 86400000);
+    return date.toISOString().split("T")[0];
+  }
+  const str = String(value).trim();
+  if (!str) return null;
+  const slashMatch = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (slashMatch) {
+    const day = parseInt(slashMatch[1], 10);
+    const month = parseInt(slashMatch[2], 10);
+    let year = parseInt(slashMatch[3], 10);
+    if (year >= 2400) year -= 543;
+    if (year < 100) year += 2000;
+    const d = new Date(Date.UTC(year, month - 1, day));
+    if (!isNaN(d.getTime()) && d.getFullYear() > 1900) return d.toISOString().split("T")[0];
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  if (/^\d+$/.test(str)) {
+    const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+    const date = new Date(excelEpoch.getTime() + Number(str) * 86400000);
+    return date.toISOString().split("T")[0];
+  }
+  const d = new Date(str);
+  if (!isNaN(d.getTime())) return d.toISOString().split("T")[0];
+  return null;
+}
+
+function mapStatus(thai: string): string {
+  const s = String(thai || "").trim();
+  if (s === "อนุมัติ") return "approved";
+  if (s === "รออนุมัติ") return "pending";
+  if (s === "ดำเนินการแล้ว") return "completed";
+  if (s === "ไม่อนุมัติ") return "rejected";
+  if (s === "ยกเลิก") return "cancelled";
+  return "pending";
+}
+
 export default function Quotations() {
   const [quotations, setQuotations] = useState<Quotation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [importing, setImporting] = useState(false);
   const [search, setSearch] = useState("");
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [yearFilter, setYearFilter] = useState(String(new Date().getFullYear()));
   const [monthFilter, setMonthFilter] = useState(String(new Date().getMonth() + 1).padStart(2, "0"));
@@ -198,11 +243,81 @@ export default function Quotations() {
     setDialogOpen(true);
   };
 
+  const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    try {
+      const rows = await readXlsxFile(file);
+      let headerIdx = -1;
+      for (let i = 0; i < Math.min(rows.length, 20); i++) {
+        if (rows[i]?.some((c) => String(c).includes("เลขที่เอกสาร"))) { headerIdx = i; break; }
+      }
+      if (headerIdx === -1) { toast({ title: "ไม่พบหัวตาราง", description: "Header row not found in file", variant: "destructive" }); return; }
+
+      const dataRows = rows.slice(headerIdx + 1).filter((row) => row?.[1] && String(row[1]).startsWith("QT"));
+      if (dataRows.length === 0) { toast({ title: "ไม่พบข้อมูล", description: "No QT records found", variant: "destructive" }); return; }
+
+      const records = dataRows.map((row) => ({
+        document_number: String(row[1] || ""),
+        document_date: parseDate(String(row[2] || "")),
+        customer_name: String(row[3] || "") || null,
+        project_name: String(row[4] || "") || null,
+        amount: Number(row[7]) || 0,
+        vat: Number(row[8]) || 0,
+        net_total: Number(row[9]) || 0,
+        status: mapStatus(String(row[12] || "")),
+      }));
+
+      const batchSize = 100;
+      let totalInserted = 0;
+      let totalUpdated = 0;
+      const errors: string[] = [];
+
+      for (let i = 0; i < records.length; i += batchSize) {
+        const batch = records.slice(i, i + batchSize);
+        const { data, error } = await supabase.functions.invoke("import-quotations", { body: { records: batch } });
+        if (error) errors.push(error.message);
+        else if (data) { totalInserted += data.inserted || 0; totalUpdated += data.updated || 0; if (data.errors?.length) errors.push(...data.errors); }
+      }
+
+      toast({
+        title: `นำเข้าสำเร็จ ${totalInserted + totalUpdated} รายการ`,
+        description: `เพิ่มใหม่ ${totalInserted} / อัพเดท ${totalUpdated}${errors.length ? ` | ข้อผิดพลาด: ${errors.length}` : ""}`,
+      });
+      fetchQuotations();
+    } catch (err) {
+      toast({ title: "เกิดข้อผิดพลาด", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold font-sarabun text-foreground">
-        ติดตามใบเสนอราคา / Sales Tracking
-      </h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold font-sarabun text-foreground">
+          ติดตามใบเสนอราคา / Sales Tracking
+        </h1>
+        <div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            className="hidden"
+            onChange={handleImportExcel}
+          />
+          <Button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={importing}
+            className="font-sarabun gap-2 bg-primary text-primary-foreground"
+          >
+            <Upload className="h-4 w-4" />
+            {importing ? "กำลังนำเข้า..." : "Import FlowAccount Excel"}
+          </Button>
+        </div>
+      </div>
 
       {/* Advanced Filters */}
       <div className="flex flex-wrap gap-3">
