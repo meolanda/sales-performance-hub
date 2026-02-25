@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { TrendingUp, Clock, CheckCircle, BarChart3, Flame } from "lucide-react";
+import { MonthlyComparison } from "@/components/MonthlyComparison";
 
 interface Quotation {
   id: string;
@@ -25,6 +26,7 @@ interface Quotation {
   created_at: string;
   work_type: string | null;
   customer_name: string | null;
+  follow_up_status: string | null;
 }
 
 const PIE_COLORS = [
@@ -84,7 +86,7 @@ export default function Index() {
       while (true) {
         const { data: page } = await supabase
           .from("quotations")
-          .select("id, document_number, net_total, status, document_date, created_at, work_type, customer_name")
+          .select("id, document_number, net_total, status, document_date, created_at, work_type, customer_name, follow_up_status")
           .order("created_at", { ascending: false })
           .range(from, from + pageSize - 1);
         if (!page || page.length === 0) break;
@@ -384,6 +386,9 @@ export default function Index() {
           )}
         </CardContent>
       </Card>
+
+      {/* Monthly Comparison */}
+      <MonthlyComparison quotations={filtered} />
     </div>
   );
 }
