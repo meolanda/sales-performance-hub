@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__ac-parts-filesystem__list_directory",
+      "Bash(find 'D:\\\\เขียน APP\\\\sales-performance-hub-main\\\\sales-performance-hub-main' -type f \\\\\\(-name *.sql -o -name *.md \\\\\\))"
+    ]
+  }
+}
