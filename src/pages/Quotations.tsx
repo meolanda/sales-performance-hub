@@ -39,10 +39,13 @@ interface Quotation {
   sales_priority: string | null;
   next_follow_up_date: string | null;
   internal_notes: string | null;
+<<<<<<< HEAD
   salesperson_name: string | null;
   contact_name: string | null;
   contact_phone: string | null;
   customer_category: string | null;
+=======
+>>>>>>> 01bfd92bb20cc5d83af17fd89f3f0ef48ed0608d
 }
 
 type SortKey = "net_total" | "aging";
@@ -126,7 +129,10 @@ export default function Quotations() {
   const [monthFilter, setMonthFilter] = useState(String(new Date().getMonth() + 1).padStart(2, "0"));
   const [workTypeFilter, setWorkTypeFilter] = useState("all");
   const [customerTypeFilter, setCustomerTypeFilter] = useState("all");
+<<<<<<< HEAD
   const [customerCategoryFilter, setCustomerCategoryFilter] = useState("all");
+=======
+>>>>>>> 01bfd92bb20cc5d83af17fd89f3f0ef48ed0608d
   const [sortKey, setSortKey] = useState<SortKey>("net_total");
   const [sortAsc, setSortAsc] = useState(false);
   const [editQuotation, setEditQuotation] = useState<Quotation | null>(null);
@@ -172,7 +178,10 @@ export default function Quotations() {
       if (workTypeFilter !== "all" && q.work_type !== workTypeFilter) return false;
       if (customerTypeFilter === "corporate" && !isCorporate(q.customer_name)) return false;
       if (customerTypeFilter === "residential" && isCorporate(q.customer_name)) return false;
+<<<<<<< HEAD
       if (customerCategoryFilter !== "all" && q.customer_category !== customerCategoryFilter) return false;
+=======
+>>>>>>> 01bfd92bb20cc5d83af17fd89f3f0ef48ed0608d
       const matchSearch =
         !search ||
         q.document_number.toLowerCase().includes(search.toLowerCase()) ||
@@ -195,7 +204,11 @@ export default function Quotations() {
     });
 
     return result;
+<<<<<<< HEAD
   }, [quotations, search, statusFilter, yearFilter, monthFilter, workTypeFilter, customerTypeFilter, customerCategoryFilter, sortKey, sortAsc]);
+=======
+  }, [quotations, search, statusFilter, yearFilter, monthFilter, workTypeFilter, customerTypeFilter, sortKey, sortAsc]);
+>>>>>>> 01bfd92bb20cc5d83af17fd89f3f0ef48ed0608d
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortAsc(!sortAsc);
@@ -372,6 +385,7 @@ export default function Quotations() {
             <SelectItem value="residential">บุคคลธรรมดา / Residential</SelectItem>
           </SelectContent>
         </Select>
+<<<<<<< HEAD
         <Select value={customerCategoryFilter} onValueChange={setCustomerCategoryFilter}>
           <SelectTrigger className="w-[160px] font-sarabun">
             <SelectValue placeholder="กลุ่มลูกค้า" />
@@ -383,6 +397,8 @@ export default function Quotations() {
             <SelectItem value="รายย่อย">รายย่อย</SelectItem>
           </SelectContent>
         </Select>
+=======
+>>>>>>> 01bfd92bb20cc5d83af17fd89f3f0ef48ed0608d
       </div>
 
       {/* Search & Status */}
@@ -421,8 +437,11 @@ export default function Quotations() {
               <TableHead className="font-sarabun">เลขที่ / Doc No.</TableHead>
               <TableHead className="font-sarabun">วันที่ / Date</TableHead>
               <TableHead className="font-sarabun">ลูกค้า / Customer</TableHead>
+<<<<<<< HEAD
               <TableHead className="font-sarabun">กลุ่ม</TableHead>
               <TableHead className="font-sarabun">คนขาย</TableHead>
+=======
+>>>>>>> 01bfd92bb20cc5d83af17fd89f3f0ef48ed0608d
               <TableHead className="font-sarabun">ประเภทงาน / Type</TableHead>
               <TableHead className="font-sarabun text-right">
                 <Button variant="ghost" size="sm" onClick={() => toggleSort("net_total")} className="font-sarabun h-auto p-0">
@@ -446,13 +465,21 @@ export default function Quotations() {
           <TableBody>
             {loading ? (
               <TableRow>
+<<<<<<< HEAD
                 <TableCell colSpan={13} className="text-center font-sarabun text-muted-foreground py-8">
+=======
+                <TableCell colSpan={11} className="text-center font-sarabun text-muted-foreground py-8">
+>>>>>>> 01bfd92bb20cc5d83af17fd89f3f0ef48ed0608d
                   กำลังโหลด... / Loading...
                 </TableCell>
               </TableRow>
             ) : filtered.length === 0 ? (
               <TableRow>
+<<<<<<< HEAD
                 <TableCell colSpan={13} className="text-center font-sarabun text-muted-foreground py-8">
+=======
+                <TableCell colSpan={11} className="text-center font-sarabun text-muted-foreground py-8">
+>>>>>>> 01bfd92bb20cc5d83af17fd89f3f0ef48ed0608d
                   ไม่พบข้อมูล / No data found
                 </TableCell>
               </TableRow>
@@ -464,12 +491,15 @@ export default function Quotations() {
                     <TableCell className="font-sarabun font-medium">{q.document_number}</TableCell>
                     <TableCell className="font-sarabun">{q.document_date || "-"}</TableCell>
                     <TableCell className="font-sarabun max-w-[150px] truncate">{q.customer_name || "-"}</TableCell>
+<<<<<<< HEAD
                     <TableCell className="font-sarabun text-xs">
                       {q.customer_category ? (
                         <Badge variant="outline" className="font-sarabun text-xs">{q.customer_category}</Badge>
                       ) : <span className="text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell className="font-sarabun text-xs">{q.salesperson_name || <span className="text-muted-foreground">—</span>}</TableCell>
+=======
+>>>>>>> 01bfd92bb20cc5d83af17fd89f3f0ef48ed0608d
                     <TableCell className="font-sarabun text-xs">{q.work_type || "-"}</TableCell>
                     <TableCell className="font-sarabun text-right">
                       ฿{Number(q.net_total).toLocaleString("th-TH", { minimumFractionDigits: 2 })}

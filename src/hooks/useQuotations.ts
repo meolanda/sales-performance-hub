@@ -17,10 +17,13 @@ export interface Quotation {
   sales_priority?: string | null;
   next_follow_up_date?: string | null;
   internal_notes?: string | null;
+<<<<<<< HEAD
   salesperson_name?: string | null;
   contact_name?: string | null;
   contact_phone?: string | null;
   customer_category?: string | null;
+=======
+>>>>>>> 01bfd92bb20cc5d83af17fd89f3f0ef48ed0608d
 }
 
 export const WORK_TYPES = [
