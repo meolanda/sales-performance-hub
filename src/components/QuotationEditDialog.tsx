@@ -1,9 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-<<<<<<< HEAD
 import FollowUpHistory from "@/components/FollowUpHistory";
-=======
->>>>>>> 01bfd92bb20cc5d83af17fd89f3f0ef48ed0608d
 import {
   Dialog,
   DialogContent,
@@ -48,11 +45,8 @@ const WORK_TYPES = [
   "งานอื่นๆ",
 ];
 
-<<<<<<< HEAD
 const CUSTOMER_CATEGORIES = ["Food", "CO", "รายย่อย"];
 
-=======
->>>>>>> 01bfd92bb20cc5d83af17fd89f3f0ef48ed0608d
 interface Quotation {
   id: string;
   document_number: string;
@@ -64,13 +58,10 @@ interface Quotation {
   next_follow_up_date: string | null;
   internal_notes: string | null;
   work_type: string | null;
-<<<<<<< HEAD
   salesperson_name: string | null;
   contact_name: string | null;
   contact_phone: string | null;
   customer_category: string | null;
-=======
->>>>>>> 01bfd92bb20cc5d83af17fd89f3f0ef48ed0608d
 }
 
 interface Props {
@@ -86,13 +77,10 @@ export default function QuotationEditDialog({ quotation, open, onOpenChange, onS
   const [salesPriority, setSalesPriority] = useState("unassigned");
   const [nextFollowUpDate, setNextFollowUpDate] = useState("");
   const [internalNotes, setInternalNotes] = useState("");
-<<<<<<< HEAD
   const [salespersonName, setSalespersonName] = useState("");
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [customerCategory, setCustomerCategory] = useState("unassigned");
-=======
->>>>>>> 01bfd92bb20cc5d83af17fd89f3f0ef48ed0608d
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -102,13 +90,10 @@ export default function QuotationEditDialog({ quotation, open, onOpenChange, onS
       setSalesPriority(quotation.sales_priority || "unassigned");
       setNextFollowUpDate(quotation.next_follow_up_date || "");
       setInternalNotes(quotation.internal_notes || "");
-<<<<<<< HEAD
       setSalespersonName(quotation.salesperson_name || "");
       setContactName(quotation.contact_name || "");
       setContactPhone(quotation.contact_phone || "");
       setCustomerCategory(quotation.customer_category || "unassigned");
-=======
->>>>>>> 01bfd92bb20cc5d83af17fd89f3f0ef48ed0608d
     }
   }, [open, quotation]);
 
@@ -122,13 +107,10 @@ export default function QuotationEditDialog({ quotation, open, onOpenChange, onS
       sales_priority: salesPriority === "unassigned" ? null : salesPriority,
       next_follow_up_date: nextFollowUpDate || null,
       internal_notes: internalNotes || null,
-<<<<<<< HEAD
       salesperson_name: salespersonName || null,
       contact_name: contactName || null,
       contact_phone: contactPhone || null,
       customer_category: customerCategory === "unassigned" ? null : customerCategory,
-=======
->>>>>>> 01bfd92bb20cc5d83af17fd89f3f0ef48ed0608d
     };
 
     console.log("[QuotationEdit] Saving ID:", quotation.id, "Payload:", JSON.stringify(updatePayload));
@@ -152,7 +134,6 @@ export default function QuotationEditDialog({ quotation, open, onOpenChange, onS
       }
 
       const saved = data[0];
-      // Pass the saved record back for optimistic local update
       onSaved(saved);
       onOpenChange(false);
       toast.success(`บันทึกสำเร็จ: ${saved.work_type || "-"} / ${saved.follow_up_status || "-"}`);
@@ -165,11 +146,7 @@ export default function QuotationEditDialog({ quotation, open, onOpenChange, onS
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-<<<<<<< HEAD
       <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto" aria-describedby="edit-dialog-desc">
-=======
-      <DialogContent className="sm:max-w-lg" aria-describedby="edit-dialog-desc">
->>>>>>> 01bfd92bb20cc5d83af17fd89f3f0ef48ed0608d
         <DialogHeader>
           <DialogTitle className="font-sarabun">
             ติดตามงาน / Follow-up — {quotation?.document_number}
@@ -183,7 +160,6 @@ export default function QuotationEditDialog({ quotation, open, onOpenChange, onS
           </div>
 
           <div className="space-y-2">
-<<<<<<< HEAD
             <Label className="font-sarabun">ประเภทลูกค้า / Customer Category</Label>
             <Select value={customerCategory} onValueChange={setCustomerCategory}>
               <SelectTrigger className="font-sarabun">
@@ -230,8 +206,6 @@ export default function QuotationEditDialog({ quotation, open, onOpenChange, onS
           </div>
 
           <div className="space-y-2">
-=======
->>>>>>> 01bfd92bb20cc5d83af17fd89f3f0ef48ed0608d
             <Label className="font-sarabun">ประเภทงาน / Work Type</Label>
             <Select value={workType} onValueChange={setWorkType}>
               <SelectTrigger className="font-sarabun">
@@ -298,7 +272,6 @@ export default function QuotationEditDialog({ quotation, open, onOpenChange, onS
           </div>
         </div>
 
-<<<<<<< HEAD
         {quotation && (
           <FollowUpHistory
             quotationId={quotation.id}
@@ -306,8 +279,6 @@ export default function QuotationEditDialog({ quotation, open, onOpenChange, onS
           />
         )}
 
-=======
->>>>>>> 01bfd92bb20cc5d83af17fd89f3f0ef48ed0608d
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} className="font-sarabun">
             ยกเลิก / Cancel
