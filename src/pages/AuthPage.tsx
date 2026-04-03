@@ -11,10 +11,7 @@ export default function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-<<<<<<< HEAD
   const [googleLoading, setGoogleLoading] = useState(false);
-=======
->>>>>>> 01bfd92bb20cc5d83af17fd89f3f0ef48ed0608d
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -35,7 +32,6 @@ export default function AuthPage() {
     }
   };
 
-<<<<<<< HEAD
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
     try {
@@ -53,8 +49,6 @@ export default function AuthPage() {
     }
   };
 
-=======
->>>>>>> 01bfd92bb20cc5d83af17fd89f3f0ef48ed0608d
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
@@ -62,7 +56,6 @@ export default function AuthPage() {
           <CardTitle className="text-2xl font-sarabun">Quotation DIF</CardTitle>
           <CardDescription className="font-sarabun">เข้าสู่ระบบ / Login</CardDescription>
         </CardHeader>
-<<<<<<< HEAD
         <CardContent className="space-y-4">
           <Button
             type="button"
@@ -89,9 +82,6 @@ export default function AuthPage() {
             </div>
           </div>
 
-=======
-        <CardContent>
->>>>>>> 01bfd92bb20cc5d83af17fd89f3f0ef48ed0608d
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email" className="font-sarabun">อีเมล / Email</Label>
