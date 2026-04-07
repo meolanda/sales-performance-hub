@@ -4,6 +4,7 @@ import readXlsxFile from "read-excel-file";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -19,7 +20,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, ArrowUpDown, Pencil, Download, Upload } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Search, ArrowUpDown, Pencil, Download, Upload, Users, X } from "lucide-react";
 import QuotationEditDialog from "@/components/QuotationEditDialog";
 import { useToast } from "@/hooks/use-toast";
 
@@ -131,6 +140,12 @@ export default function Quotations() {
   const [sortAsc, setSortAsc] = useState(false);
   const [editQuotation, setEditQuotation] = useState<Quotation | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [salespersonFilter, setSalespersonFilter] = useState("all");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
+  const [bulkSalesperson, setBulkSalesperson] = useState("");
+  const [bulkContact, setBulkContact] = useState("");
+  const [bulkUpdating, setBulkUpdating] = useState(false);
 
   const fetchQuotations = useCallback(async () => {
     const allData: Quotation[] = [];
@@ -155,6 +170,11 @@ export default function Quotations() {
     fetchQuotations();
   }, [fetchQuotations]);
 
+  // Reset selection when any filter changes
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [search, statusFilter, yearFilter, monthFilter, workTypeFilter, customerTypeFilter, customerCategoryFilter, salespersonFilter]);
+
   const availableYears = useMemo(() => {
     const years = new Set<string>();
     quotations.forEach((q) => {
@@ -163,6 +183,17 @@ export default function Quotations() {
     });
     return Array.from(years).sort().reverse();
   }, [quotations]);
+
+  const salespersonOptions = useMemo(() => {
+    const names = new Set<string>();
+    quotations.forEach((q) => { if (q.salesperson_name) names.add(q.salesperson_name); });
+    return Array.from(names).sort();
+  }, [quotations]);
+
+  const unassignedCount = useMemo(
+    () => quotations.filter((q) => !q.salesperson_name).length,
+    [quotations]
+  );
 
   const filtered = useMemo(() => {
     let result = quotations.filter((q) => {
@@ -173,6 +204,8 @@ export default function Quotations() {
       if (customerTypeFilter === "corporate" && !isCorporate(q.customer_name)) return false;
       if (customerTypeFilter === "residential" && isCorporate(q.customer_name)) return false;
       if (customerCategoryFilter !== "all" && q.customer_category !== customerCategoryFilter) return false;
+      if (salespersonFilter === "unassigned" && q.salesperson_name) return false;
+      if (salespersonFilter !== "all" && salespersonFilter !== "unassigned" && q.salesperson_name !== salespersonFilter) return false;
       const matchSearch =
         !search ||
         q.document_number.toLowerCase().includes(search.toLowerCase()) ||
@@ -195,7 +228,7 @@ export default function Quotations() {
     });
 
     return result;
-  }, [quotations, search, statusFilter, yearFilter, monthFilter, workTypeFilter, customerTypeFilter, customerCategoryFilter, sortKey, sortAsc]);
+  }, [quotations, search, statusFilter, yearFilter, monthFilter, workTypeFilter, customerTypeFilter, customerCategoryFilter, salespersonFilter, sortKey, sortAsc]);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortAsc(!sortAsc);
@@ -247,6 +280,62 @@ export default function Quotations() {
   const openEdit = (q: Quotation) => {
     setEditQuotation(q);
     setDialogOpen(true);
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) setSelectedIds(new Set(filtered.map((q) => q.id)));
+    else setSelectedIds(new Set());
+  };
+
+  const handleSelectOne = (id: string, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+
+  const handleBulkStatus = async (status: string) => {
+    if (selectedIds.size === 0) return;
+    setBulkUpdating(true);
+    const ids = Array.from(selectedIds);
+    const { error } = await supabase
+      .from("quotations")
+      .update({ status })
+      .in("id", ids);
+    setBulkUpdating(false);
+    if (error) {
+      toast({ title: "เกิดข้อผิดพลาด", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: `อัพเดทสถานะ ${ids.length} รายการสำเร็จ` });
+      setSelectedIds(new Set());
+      fetchQuotations();
+    }
+  };
+
+  const handleBulkAssign = async () => {
+    if (selectedIds.size === 0) return;
+    setBulkUpdating(true);
+    const ids = Array.from(selectedIds);
+    const updates: Record<string, string | null> = {};
+    if (bulkSalesperson.trim()) updates.salesperson_name = bulkSalesperson.trim();
+    if (bulkContact.trim()) updates.contact_name = bulkContact.trim();
+    const { error } = await supabase
+      .from("quotations")
+      .update(updates)
+      .in("id", ids);
+    setBulkUpdating(false);
+    if (error) {
+      toast({ title: "เกิดข้อผิดพลาด", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: `อัพเดท ${ids.length} รายการสำเร็จ` });
+      setBulkAssignOpen(false);
+      setBulkSalesperson("");
+      setBulkContact("");
+      setSelectedIds(new Set());
+      fetchQuotations();
+    }
   };
 
   const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -303,9 +392,20 @@ export default function Quotations() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold font-sarabun text-foreground">
-          ติดตามใบเสนอราคา / Sales Tracking
-        </h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold font-sarabun text-foreground">
+            ติดตามใบเสนอราคา / Sales Tracking
+          </h1>
+          {unassignedCount > 0 && (
+            <Badge
+              variant="secondary"
+              className="font-sarabun text-xs cursor-pointer bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+              onClick={() => setSalespersonFilter("unassigned")}
+            >
+              ยังไม่ระบุคนขาย {unassignedCount} ใบ
+            </Badge>
+          )}
+        </div>
         <div>
           <input
             ref={fileInputRef}
@@ -383,6 +483,18 @@ export default function Quotations() {
             <SelectItem value="รายย่อย">รายย่อย</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={salespersonFilter} onValueChange={setSalespersonFilter}>
+          <SelectTrigger className="w-[180px] font-sarabun">
+            <SelectValue placeholder="พนักงานขาย" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">ทุกคน / All</SelectItem>
+            <SelectItem value="unassigned">ยังไม่ระบุ</SelectItem>
+            {salespersonOptions.map((name) => (
+              <SelectItem key={name} value={name}>{name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Search & Status */}
@@ -418,6 +530,18 @@ export default function Quotations() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={
+                    filtered.length > 0 && selectedIds.size === filtered.length
+                      ? true
+                      : selectedIds.size > 0
+                      ? "indeterminate"
+                      : false
+                  }
+                  onCheckedChange={(checked) => handleSelectAll(!!checked)}
+                />
+              </TableHead>
               <TableHead className="font-sarabun">เลขที่ / Doc No.</TableHead>
               <TableHead className="font-sarabun">วันที่ / Date</TableHead>
               <TableHead className="font-sarabun">ลูกค้า / Customer</TableHead>
@@ -446,13 +570,13 @@ export default function Quotations() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={13} className="text-center font-sarabun text-muted-foreground py-8">
+                <TableCell colSpan={14} className="text-center font-sarabun text-muted-foreground py-8">
                   กำลังโหลด... / Loading...
                 </TableCell>
               </TableRow>
             ) : filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={13} className="text-center font-sarabun text-muted-foreground py-8">
+                <TableCell colSpan={14} className="text-center font-sarabun text-muted-foreground py-8">
                   ไม่พบข้อมูล / No data found
                 </TableCell>
               </TableRow>
@@ -460,7 +584,13 @@ export default function Quotations() {
               filtered.map((q) => {
                 const aging = calcAging(q.document_date, q.created_at);
                 return (
-                  <TableRow key={q.id} className={q.status === "pending" && aging > 30 ? "bg-destructive/5" : ""}>
+                  <TableRow key={q.id} className={`${q.status === "pending" && aging > 30 ? "bg-destructive/5" : ""} ${selectedIds.has(q.id) ? "bg-primary/5" : ""}`}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedIds.has(q.id)}
+                        onCheckedChange={(checked) => handleSelectOne(q.id, !!checked)}
+                      />
+                    </TableCell>
                     <TableCell className="font-sarabun font-medium">{q.document_number}</TableCell>
                     <TableCell className="font-sarabun">{q.document_date || "-"}</TableCell>
                     <TableCell className="font-sarabun max-w-[150px] truncate">{q.customer_name || "-"}</TableCell>
@@ -506,13 +636,113 @@ export default function Quotations() {
         onOpenChange={setDialogOpen}
         onSaved={(updatedRecord?: any) => {
           if (updatedRecord) {
-            // Optimistic local update — immediately reflect changes in the table
             setQuotations(prev => prev.map(q => q.id === updatedRecord.id ? { ...q, ...updatedRecord } : q));
           }
-          // Delay refetch slightly to avoid overwriting optimistic update with stale data
           setTimeout(() => fetchQuotations(), 1500);
         }}
       />
+
+      {/* Floating Bulk Toolbar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-background border border-border shadow-lg rounded-xl px-5 py-3">
+          <span className="font-sarabun text-sm font-medium text-foreground">
+            เลือก {selectedIds.size} รายการ
+          </span>
+          <div className="w-px h-5 bg-border" />
+          <Select onValueChange={handleBulkStatus} disabled={bulkUpdating}>
+            <SelectTrigger className="w-[160px] font-sarabun h-8 text-sm">
+              <SelectValue placeholder="เปลี่ยนสถานะ" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="approved">อนุมัติ / Approved</SelectItem>
+              <SelectItem value="pending">รอดำเนินการ / Pending</SelectItem>
+              <SelectItem value="completed">ดำเนินการแล้ว</SelectItem>
+              <SelectItem value="rejected">ปฏิเสธ / Rejected</SelectItem>
+              <SelectItem value="cancelled">ยกเลิก</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            size="sm"
+            variant="outline"
+            className="font-sarabun gap-1.5 h-8"
+            onClick={() => setBulkAssignOpen(true)}
+            disabled={bulkUpdating}
+          >
+            <Users className="h-3.5 w-3.5" />
+            ระบุพนักงานขาย
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8 w-8 p-0 text-muted-foreground"
+            onClick={() => setSelectedIds(new Set())}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
+      {/* Bulk Assign Modal */}
+      <Dialog open={bulkAssignOpen} onOpenChange={setBulkAssignOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-sarabun">
+              ระบุพนักงานขาย — {selectedIds.size} รายการ
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label className="font-sarabun">พนักงานขาย</Label>
+              {salespersonOptions.length > 0 && (
+                <Select
+                  value={bulkSalesperson || "__none__"}
+                  onValueChange={(v) => { if (v !== "__none__") setBulkSalesperson(v); }}
+                >
+                  <SelectTrigger className="w-full font-sarabun">
+                    <SelectValue placeholder="เลือกจากรายการ..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— เลือกจากรายการ —</SelectItem>
+                    {salespersonOptions.map((name) => (
+                      <SelectItem key={name} value={name}>{name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <Input
+                className="font-sarabun"
+                placeholder="หรือพิมพ์ชื่อใหม่..."
+                value={bulkSalesperson}
+                onChange={(e) => setBulkSalesperson(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="font-sarabun">ผู้ติดต่อ</Label>
+              <Input
+                className="font-sarabun"
+                placeholder="ชื่อผู้ติดต่อ..."
+                value={bulkContact}
+                onChange={(e) => setBulkContact(e.target.value)}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground font-sarabun">
+              ฟิลด์ที่เว้นว่างจะไม่ถูกเปลี่ยนแปลง
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkAssignOpen(false)} className="font-sarabun">
+              ยกเลิก
+            </Button>
+            <Button
+              onClick={handleBulkAssign}
+              disabled={bulkUpdating || (!bulkSalesperson.trim() && !bulkContact.trim())}
+              className="font-sarabun"
+            >
+              {bulkUpdating ? "กำลังบันทึก..." : `บันทึก ${selectedIds.size} รายการ`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
