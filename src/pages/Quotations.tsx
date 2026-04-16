@@ -186,7 +186,7 @@ export default function Quotations() {
 
   const salespersonOptions = useMemo(() => {
     const names = new Set<string>();
-    quotations.forEach((q) => { if (q.salesperson_name) names.add(q.salesperson_name); });
+    quotations.forEach((q) => { if (q.salesperson_name) names.add(q.salesperson_name.trim()); });
     return Array.from(names).sort();
   }, [quotations]);
 
@@ -205,7 +205,7 @@ export default function Quotations() {
       if (customerTypeFilter === "residential" && isCorporate(q.customer_name)) return false;
       if (customerCategoryFilter !== "all" && q.customer_category !== customerCategoryFilter) return false;
       if (salespersonFilter === "unassigned" && q.salesperson_name) return false;
-      if (salespersonFilter !== "all" && salespersonFilter !== "unassigned" && q.salesperson_name !== salespersonFilter) return false;
+      if (salespersonFilter !== "all" && salespersonFilter !== "unassigned" && q.salesperson_name?.trim() !== salespersonFilter) return false;
       const matchSearch =
         !search ||
         q.document_number.toLowerCase().includes(search.toLowerCase()) ||
