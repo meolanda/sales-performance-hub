@@ -261,6 +261,17 @@ export default function Quotations() {
     URL.revokeObjectURL(url);
   }, [filtered]);
 
+  const statusLabel = (status: string) => {
+    switch (status) {
+      case "approved": return "ปิดการขายได้";
+      case "pending": return "รอดำเนินการ";
+      case "completed": return "ดำเนินการแล้ว";
+      case "rejected": return "ปฏิเสธ";
+      case "cancelled": return "ยกเลิก";
+      default: return status;
+    }
+  };
+
   const statusVariant = (status: string) => {
     switch (status) {
       case "approved": return "default" as const;
@@ -309,6 +320,24 @@ export default function Quotations() {
       toast({ title: "เกิดข้อผิดพลาด", description: error.message, variant: "destructive" });
     } else {
       toast({ title: `อัพเดทสถานะ ${ids.length} รายการสำเร็จ` });
+      setSelectedIds(new Set());
+      fetchQuotations();
+    }
+  };
+
+  const handleBulkCategory = async (category: string) => {
+    if (selectedIds.size === 0) return;
+    setBulkUpdating(true);
+    const ids = Array.from(selectedIds);
+    const { error } = await supabase
+      .from("quotations")
+      .update({ customer_category: category === "clear" ? null : category })
+      .in("id", ids);
+    setBulkUpdating(false);
+    if (error) {
+      toast({ title: "เกิดข้อผิดพลาด", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: `อัพเดทกลุ่มลูกค้า ${ids.length} รายการสำเร็จ` });
       setSelectedIds(new Set());
       fetchQuotations();
     }
@@ -514,7 +543,7 @@ export default function Quotations() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">ทั้งหมด / All</SelectItem>
-            <SelectItem value="approved">อนุมัติ / Approved</SelectItem>
+            <SelectItem value="approved">ปิดการขายได้</SelectItem>
             <SelectItem value="pending">รอดำเนินการ / Pending</SelectItem>
             <SelectItem value="rejected">ปฏิเสธ / Rejected</SelectItem>
           </SelectContent>
@@ -607,11 +636,13 @@ export default function Quotations() {
                     <TableCell>{agingBadge(aging, q.status)}</TableCell>
                     <TableCell>
                       <Badge variant={statusVariant(q.status)} className="font-sarabun">
-                        {q.status}
+                        {statusLabel(q.status)}
                       </Badge>
                     </TableCell>
                     <TableCell className="font-sarabun text-xs">
-                      {q.follow_up_status || <span className="text-muted-foreground">—</span>}
+                      {q.status === "approved"
+                        ? "ปิดการขายได้"
+                        : q.follow_up_status || <span className="text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell>{priorityBadge(q.sales_priority)}</TableCell>
                     <TableCell className="font-sarabun text-xs">
@@ -654,11 +685,22 @@ export default function Quotations() {
               <SelectValue placeholder="เปลี่ยนสถานะ" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="approved">อนุมัติ / Approved</SelectItem>
+              <SelectItem value="approved">ปิดการขายได้</SelectItem>
               <SelectItem value="pending">รอดำเนินการ / Pending</SelectItem>
               <SelectItem value="completed">ดำเนินการแล้ว</SelectItem>
               <SelectItem value="rejected">ปฏิเสธ / Rejected</SelectItem>
               <SelectItem value="cancelled">ยกเลิก</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select onValueChange={handleBulkCategory} disabled={bulkUpdating}>
+            <SelectTrigger className="w-[150px] font-sarabun h-8 text-sm">
+              <SelectValue placeholder="กลุ่มลูกค้า" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Food">Food</SelectItem>
+              <SelectItem value="CO">CO</SelectItem>
+              <SelectItem value="รายย่อย">รายย่อย</SelectItem>
+              <SelectItem value="clear">— ล้างค่า —</SelectItem>
             </SelectContent>
           </Select>
           <Button

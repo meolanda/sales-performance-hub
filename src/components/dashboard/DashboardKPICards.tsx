@@ -31,7 +31,7 @@ export function DashboardKPICards({
           <div className="text-2xl font-bold font-sarabun" style={{ color: "hsl(142, 71%, 40%)" }}>
             ฿{actualSales.toLocaleString("th-TH", { minimumFractionDigits: 2 })}
           </div>
-          <p className="text-xs text-muted-foreground font-sarabun mt-1">เฉพาะ Approved เท่านั้น</p>
+          <p className="text-xs text-muted-foreground font-sarabun mt-1">เฉพาะ ปิดการขายได้ เท่านั้น</p>
         </CardContent>
       </Card>
 

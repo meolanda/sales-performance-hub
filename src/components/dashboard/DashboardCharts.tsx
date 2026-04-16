@@ -27,7 +27,7 @@ const WORK_TYPE_COLORS: Record<string, string> = {
 };
 
 const chartConfig = {
-  approved: { label: "อนุมัติ / Approved", color: "hsl(142, 71%, 45%)" },
+  approved: { label: "ปิดการขายได้", color: "hsl(142, 71%, 45%)" },
   pending: { label: "รอดำเนินการ / Pending", color: "hsl(48, 96%, 53%)" },
   rejected: { label: "ปฏิเสธ / Rejected", color: "hsl(0, 84%, 60%)" },
   other: { label: "อื่นๆ / Other", color: "hsl(217, 91%, 60%)" },
