@@ -136,7 +136,7 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // UPDATE existing records — ONLY accounting fields, preserve sales data
+    // UPDATE existing records — ONLY accounting fields, preserve sales data + status
     for (const rec of updateRecords) {
       const { error } = await supabase
         .from("quotations")
@@ -147,7 +147,6 @@ Deno.serve(async (req: Request) => {
           amount: rec.amount,
           vat: rec.vat,
           net_total: rec.net_total,
-          status: rec.status,
         })
         .eq("document_number", String(rec.document_number));
 
@@ -164,7 +163,7 @@ Deno.serve(async (req: Request) => {
         total_parsed: records.length,
         inserted: insertedCount,
         updated: updatedCount,
-        skipped_sales_fields: "work_type, follow_up_status, sales_priority, next_follow_up_date, internal_notes preserved for existing records",
+        skipped_sales_fields: "status, work_type, follow_up_status, sales_priority, next_follow_up_date, internal_notes preserved for existing records",
         errors,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
