@@ -36,6 +36,7 @@ export function SalespersonLeaderboard({ quotations }: SalespersonLeaderboardPro
       .map(([name, d]) => ({
         name,
         ...d,
+        pending: d.total - d.won - d.lost,
         winRate: d.won + d.lost > 0 ? (d.won / (d.won + d.lost)) * 100 : 0,
       }))
       .sort((a, b) => b.wonValue - a.wonValue);
@@ -57,7 +58,8 @@ export function SalespersonLeaderboard({ quotations }: SalespersonLeaderboardPro
                 <TableHead className="font-sarabun text-right">ใบทั้งหมด</TableHead>
                 <TableHead className="font-sarabun text-right">ปิดได้</TableHead>
                 <TableHead className="font-sarabun text-right">ปิดไม่ได้</TableHead>
-                <TableHead className="font-sarabun text-center">Win Rate</TableHead>
+                <TableHead className="font-sarabun text-right">Pending</TableHead>
+                <TableHead className="font-sarabun text-center">Win Rate*</TableHead>
                 <TableHead className="font-sarabun text-right">มูลค่าปิดได้ (฿)</TableHead>
               </TableRow>
             </TableHeader>
@@ -73,6 +75,9 @@ export function SalespersonLeaderboard({ quotations }: SalespersonLeaderboardPro
                   </TableCell>
                   <TableCell className="text-right tabular-nums text-red-500">
                     {row.lost}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums text-muted-foreground">
+                    {row.pending}
                   </TableCell>
                   <TableCell className="text-center">
                     <Badge
@@ -92,6 +97,9 @@ export function SalespersonLeaderboard({ quotations }: SalespersonLeaderboardPro
             </TableBody>
           </Table>
         </div>
+        <p className="text-xs text-muted-foreground font-sarabun mt-2">
+          * Win Rate คำนวณจากใบที่ปิดผลแล้วเท่านั้น (ปิดได้ + ปิดไม่ได้) ไม่รวม Pending
+        </p>
       </CardContent>
     </Card>
   );
