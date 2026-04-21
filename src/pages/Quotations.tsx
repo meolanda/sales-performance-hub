@@ -265,9 +265,7 @@ export default function Quotations() {
     switch (status) {
       case "approved": return "ปิดการขายได้";
       case "pending": return "รอดำเนินการ";
-      case "completed": return "ดำเนินการแล้ว";
-      case "rejected": return "ปฏิเสธ";
-      case "cancelled": return "ยกเลิก";
+      case "rejected": return "ปฏิเสธ / ขายไม่ได้";
       default: return status;
     }
   };
@@ -543,9 +541,9 @@ export default function Quotations() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">ทั้งหมด / All</SelectItem>
-            <SelectItem value="approved">ปิดการขายได้</SelectItem>
             <SelectItem value="pending">รอดำเนินการ / Pending</SelectItem>
-            <SelectItem value="rejected">ปฏิเสธ / Rejected</SelectItem>
+            <SelectItem value="approved">ปิดการขายได้</SelectItem>
+            <SelectItem value="rejected">ปฏิเสธ / ขายไม่ได้</SelectItem>
           </SelectContent>
         </Select>
         <Button variant="outline" onClick={exportCSV} className="font-sarabun gap-2">
@@ -685,11 +683,9 @@ export default function Quotations() {
               <SelectValue placeholder="เปลี่ยนสถานะ" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="approved">ปิดการขายได้</SelectItem>
               <SelectItem value="pending">รอดำเนินการ / Pending</SelectItem>
-              <SelectItem value="completed">ดำเนินการแล้ว</SelectItem>
-              <SelectItem value="rejected">ปฏิเสธ / Rejected</SelectItem>
-              <SelectItem value="cancelled">ยกเลิก</SelectItem>
+              <SelectItem value="approved">ปิดการขายได้</SelectItem>
+              <SelectItem value="rejected">ปฏิเสธ / ขายไม่ได้</SelectItem>
             </SelectContent>
           </Select>
           <Select onValueChange={handleBulkCategory} disabled={bulkUpdating}>

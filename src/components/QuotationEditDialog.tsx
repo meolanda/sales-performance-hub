@@ -53,6 +53,7 @@ interface Quotation {
   customer_name: string | null;
   project_name: string | null;
   net_total: number;
+  status: string | null;
   follow_up_status: string | null;
   sales_priority: string | null;
   next_follow_up_date: string | null;
@@ -72,6 +73,7 @@ interface Props {
 }
 
 export default function QuotationEditDialog({ quotation, open, onOpenChange, onSaved }: Props) {
+  const [status, setStatus] = useState("pending");
   const [workType, setWorkType] = useState("unassigned");
   const [followUpStatus, setFollowUpStatus] = useState("unassigned");
   const [salesPriority, setSalesPriority] = useState("unassigned");
@@ -85,6 +87,7 @@ export default function QuotationEditDialog({ quotation, open, onOpenChange, onS
 
   useEffect(() => {
     if (open && quotation) {
+      setStatus(quotation.status || "pending");
       setWorkType(quotation.work_type || "unassigned");
       setFollowUpStatus(quotation.follow_up_status || "unassigned");
       setSalesPriority(quotation.sales_priority || "unassigned");
@@ -102,6 +105,7 @@ export default function QuotationEditDialog({ quotation, open, onOpenChange, onS
     setSaving(true);
 
     const updatePayload = {
+      status,
       work_type: workType === "unassigned" ? null : workType,
       follow_up_status: followUpStatus === "unassigned" ? null : followUpStatus,
       sales_priority: salesPriority === "unassigned" ? null : salesPriority,
@@ -216,6 +220,20 @@ export default function QuotationEditDialog({ quotation, open, onOpenChange, onS
                 {WORK_TYPES.map((t) => (
                   <SelectItem key={t} value={t}>{t}</SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="font-sarabun">สถานะใบเสนอราคา / Status</Label>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger className="font-sarabun">
+                <SelectValue placeholder="เลือกสถานะ..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">รอดำเนินการ / Pending</SelectItem>
+                <SelectItem value="approved">ปิดการขายได้</SelectItem>
+                <SelectItem value="rejected">ปฏิเสธ / ขายไม่ได้</SelectItem>
               </SelectContent>
             </Select>
           </div>
