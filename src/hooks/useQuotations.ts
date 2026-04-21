@@ -114,7 +114,7 @@ export function useQuotations(options: UseQuotationsOptions = {}) {
       if (salespersonFilter !== "all" && (q.salesperson_name?.trim() || "") !== salespersonFilter) return false;
       return true;
     });
-  }, [quotations, yearFilter, monthFilter, workTypeFilter, customerTypeFilter]);
+  }, [quotations, yearFilter, monthFilter, workTypeFilter, customerTypeFilter, followUpFilter, customerCategoryFilter, salespersonFilter]);
 
   // KPI calculations
   const actualSales = useMemo(
