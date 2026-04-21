@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "mcp__ac-parts-filesystem__list_directory",
-      "Bash(find 'D:\\\\เขียน APP\\\\sales-performance-hub-main\\\\sales-performance-hub-main' -type f \\\\\\(-name *.sql -o -name *.md \\\\\\))"
+      "Bash(find 'D:\\\\เขียน APP\\\\sales-performance-hub-main\\\\sales-performance-hub-main' -type f \\\\\\(-name *.sql -o -name *.md \\\\\\))",
+      "Bash(ls \"C:\\\\Users\\\\Wichaya\\\\.claude\\\\projects\\\\D--------APP-sales-performance-hub-main-sales-performance-hub-main\\\\memory\"\" 2>/dev/null || echo \"NOT_EXISTS \")"
     ]
   }
 }
