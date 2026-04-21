@@ -104,8 +104,13 @@ export default function QuotationEditDialog({ quotation, open, onOpenChange, onS
     if (!quotation) return;
     setSaving(true);
 
+    const derivedStatus =
+      followUpStatus === "ปิดการขายได้" ? "approved"
+      : followUpStatus === "ปิดการขายไม่ได้" ? "rejected"
+      : status;
+
     const updatePayload = {
-      status,
+      status: derivedStatus,
       work_type: workType === "unassigned" ? null : workType,
       follow_up_status: followUpStatus === "unassigned" ? null : followUpStatus,
       sales_priority: salesPriority === "unassigned" ? null : salesPriority,
