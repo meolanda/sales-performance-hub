@@ -25,6 +25,8 @@ export default function Index() {
     pendingCount,
     hotLeads,
     hotLeadsValue,
+    rejectedCount,
+    rejectedValue,
   } = useQuotations({
     yearFilter,
     monthFilter,
@@ -81,6 +83,8 @@ export default function Index() {
         hotLeadsCount={hotLeads.length}
         totalQuotations={totalQuotations}
         pendingCount={pendingCount}
+        rejectedCount={rejectedCount}
+        rejectedValue={rejectedValue}
       />
 
       <DashboardCharts quotations={filtered} />

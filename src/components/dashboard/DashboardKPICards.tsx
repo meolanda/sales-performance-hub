@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, Clock, CheckCircle, BarChart3, Flame } from "lucide-react";
+import { TrendingUp, Clock, CheckCircle, BarChart3, Flame, XCircle } from "lucide-react";
 
 interface DashboardKPICardsProps {
   actualSales: number;
@@ -8,6 +8,8 @@ interface DashboardKPICardsProps {
   hotLeadsCount: number;
   totalQuotations: number;
   pendingCount: number;
+  rejectedCount: number;
+  rejectedValue: number;
 }
 
 export function DashboardKPICards({
@@ -17,9 +19,11 @@ export function DashboardKPICards({
   hotLeadsCount,
   totalQuotations,
   pendingCount,
+  rejectedCount,
+  rejectedValue,
 }: DashboardKPICardsProps) {
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
       <Card className="border-l-4" style={{ borderLeftColor: "hsl(142, 71%, 45%)" }}>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-sarabun text-muted-foreground">
@@ -88,6 +92,23 @@ export function DashboardKPICards({
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold font-sarabun">{pendingCount}</div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-l-4" style={{ borderLeftColor: "hsl(0, 72%, 51%)" }}>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-sm font-sarabun text-muted-foreground">
+            ขายไม่ได้ / Lost
+          </CardTitle>
+          <XCircle className="h-4 w-4" style={{ color: "hsl(0, 72%, 51%)" }} />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold font-sarabun" style={{ color: "hsl(0, 72%, 51%)" }}>
+            {rejectedCount} ใบ
+          </div>
+          <p className="text-xs text-muted-foreground font-sarabun mt-1">
+            ฿{rejectedValue.toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+          </p>
         </CardContent>
       </Card>
     </div>

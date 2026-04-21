@@ -129,6 +129,11 @@ export function useQuotations(options: UseQuotationsOptions = {}) {
 
   const totalQuotations = filtered.length;
   const pendingCount = filtered.filter((q) => q.status === "pending").length;
+  const rejectedCount = filtered.filter((q) => q.status === "rejected").length;
+  const rejectedValue = useMemo(
+    () => filtered.filter((q) => q.status === "rejected").reduce((sum, q) => sum + Number(q.net_total || 0), 0),
+    [filtered]
+  );
 
   // Hot Leads: Pending, value > 100k, aging < 15 days
   const hotLeads = useMemo(() => {
@@ -156,6 +161,8 @@ export function useQuotations(options: UseQuotationsOptions = {}) {
     pendingCount,
     hotLeads,
     hotLeadsValue,
+    rejectedCount,
+    rejectedValue,
     refetch: fetchQuotations,
   };
 }
