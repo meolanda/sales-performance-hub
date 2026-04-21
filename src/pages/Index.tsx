@@ -10,6 +10,7 @@ export default function Index() {
   const [monthFilter, setMonthFilter] = useState(String(new Date().getMonth() + 1).padStart(2, "0"));
   const [workTypeFilter, setWorkTypeFilter] = useState("all");
   const [customerTypeFilter, setCustomerTypeFilter] = useState("all");
+  const [followUpFilter, setFollowUpFilter] = useState("all");
 
   const {
     filtered,
@@ -26,6 +27,7 @@ export default function Index() {
     monthFilter,
     workTypeFilter,
     customerTypeFilter,
+    followUpFilter,
   });
 
   if (loading) {
@@ -47,11 +49,13 @@ export default function Index() {
         monthFilter={monthFilter}
         workTypeFilter={workTypeFilter}
         customerTypeFilter={customerTypeFilter}
+        followUpFilter={followUpFilter}
         availableYears={availableYears}
         onYearChange={setYearFilter}
         onMonthChange={setMonthFilter}
         onWorkTypeChange={setWorkTypeFilter}
         onCustomerTypeChange={setCustomerTypeFilter}
+        onFollowUpChange={setFollowUpFilter}
       />
 
       <DashboardKPICards

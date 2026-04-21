@@ -323,6 +323,30 @@ export default function Quotations() {
     }
   };
 
+  const handleBulkFollowUp = async (followUpStatus: string) => {
+    if (selectedIds.size === 0) return;
+    setBulkUpdating(true);
+    const ids = Array.from(selectedIds);
+    const derivedStatus =
+      followUpStatus === "ปิดการขายได้" ? "approved"
+      : followUpStatus === "ปิดการขายไม่ได้" ? "rejected"
+      : undefined;
+    const updates: Record<string, string> = { follow_up_status: followUpStatus };
+    if (derivedStatus) updates.status = derivedStatus;
+    const { error } = await supabase
+      .from("quotations")
+      .update(updates)
+      .in("id", ids);
+    setBulkUpdating(false);
+    if (error) {
+      toast({ title: "เกิดข้อผิดพลาด", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: `อัพเดทสถานะติดตาม ${ids.length} รายการสำเร็จ` });
+      setSelectedIds(new Set());
+      fetchQuotations();
+    }
+  };
+
   const handleBulkCategory = async (category: string) => {
     if (selectedIds.size === 0) return;
     setBulkUpdating(true);
@@ -686,6 +710,19 @@ export default function Quotations() {
               <SelectItem value="pending">รอดำเนินการ / Pending</SelectItem>
               <SelectItem value="approved">ปิดการขายได้</SelectItem>
               <SelectItem value="rejected">ปฏิเสธ / ขายไม่ได้</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select onValueChange={handleBulkFollowUp} disabled={bulkUpdating}>
+            <SelectTrigger className="w-[175px] font-sarabun h-8 text-sm">
+              <SelectValue placeholder="สถานะติดตาม" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ติดต่อไม่ได้">ติดต่อไม่ได้</SelectItem>
+              <SelectItem value="รอส่งข้อมูลเพิ่ม">รอส่งข้อมูลเพิ่ม</SelectItem>
+              <SelectItem value="กำลังต่อรอง">กำลังต่อรอง</SelectItem>
+              <SelectItem value="นัดดูหน้างาน">นัดดูหน้างาน</SelectItem>
+              <SelectItem value="ปิดการขายได้">ปิดการขายได้</SelectItem>
+              <SelectItem value="ปิดการขายไม่ได้">ปิดการขายไม่ได้</SelectItem>
             </SelectContent>
           </Select>
           <Select onValueChange={handleBulkCategory} disabled={bulkUpdating}>

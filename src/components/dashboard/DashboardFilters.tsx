@@ -9,16 +9,27 @@ import { WORK_TYPES } from "@/hooks/useQuotations";
 
 const THAI_MONTHS = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
 
+const FOLLOW_UP_STATUSES = [
+  "ติดต่อไม่ได้",
+  "รอส่งข้อมูลเพิ่ม",
+  "กำลังต่อรอง",
+  "นัดดูหน้างาน",
+  "ปิดการขายได้",
+  "ปิดการขายไม่ได้",
+];
+
 interface DashboardFiltersProps {
   yearFilter: string;
   monthFilter: string;
   workTypeFilter: string;
   customerTypeFilter: string;
+  followUpFilter: string;
   availableYears: string[];
   onYearChange: (value: string) => void;
   onMonthChange: (value: string) => void;
   onWorkTypeChange: (value: string) => void;
   onCustomerTypeChange: (value: string) => void;
+  onFollowUpChange: (value: string) => void;
 }
 
 export function DashboardFilters({
@@ -26,11 +37,13 @@ export function DashboardFilters({
   monthFilter,
   workTypeFilter,
   customerTypeFilter,
+  followUpFilter,
   availableYears,
   onYearChange,
   onMonthChange,
   onWorkTypeChange,
   onCustomerTypeChange,
+  onFollowUpChange,
 }: DashboardFiltersProps) {
   return (
     <div className="flex flex-wrap gap-3">
@@ -79,6 +92,18 @@ export function DashboardFilters({
           <SelectItem value="all">ทั้งหมด / All</SelectItem>
           <SelectItem value="corporate">นิติบุคคล / Corporate</SelectItem>
           <SelectItem value="residential">บุคคลธรรมดา / Residential</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <Select value={followUpFilter} onValueChange={onFollowUpChange}>
+        <SelectTrigger className="w-[200px] font-sarabun">
+          <SelectValue placeholder="สถานะติดตาม / Follow-up" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">ทุกสถานะ / All</SelectItem>
+          {FOLLOW_UP_STATUSES.map((s) => (
+            <SelectItem key={s} value={s}>{s}</SelectItem>
+          ))}
         </SelectContent>
       </Select>
     </div>
