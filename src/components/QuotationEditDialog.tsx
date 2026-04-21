@@ -21,31 +21,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 
-const FOLLOW_UP_STATUSES = [
-  "ติดต่อไม่ได้",
-  "รอส่งข้อมูลเพิ่ม",
-  "กำลังต่อรอง",
-  "นัดดูหน้างาน",
-  "ปิดการขายได้",
-  "ปิดการขายไม่ได้",
-];
-
-const SALES_PRIORITIES = [
-  "A - High",
-  "B - Medium",
-  "C - Low",
-];
-
-const WORK_TYPES = [
-  "งานระบบ Hood",
-  "งานล้างแอร์",
-  "งาน PM",
-  "งานซ่อมแอร์",
-  "งานติดตั้ง",
-  "งานอื่นๆ",
-];
-
-const CUSTOMER_CATEGORIES = ["Food", "CO", "รายย่อย"];
+import { WORK_TYPES } from "@/hooks/useQuotations";
+import { FOLLOW_UP_STATUSES, CUSTOMER_CATEGORIES, SALES_PRIORITIES } from "@/lib/quotationUtils";
 
 interface Quotation {
   id: string;
@@ -122,16 +99,12 @@ export default function QuotationEditDialog({ quotation, open, onOpenChange, onS
       customer_category: customerCategory === "unassigned" ? null : customerCategory,
     };
 
-    console.log("[QuotationEdit] Saving ID:", quotation.id, "Payload:", JSON.stringify(updatePayload));
-
     try {
       const { data, error } = await supabase
         .from("quotations")
         .update(updatePayload)
         .eq("id", quotation.id)
         .select();
-
-      console.log("[QuotationEdit] Response data:", JSON.stringify(data), "error:", error);
 
       if (error) {
         toast.error("บันทึกไม่สำเร็จ: " + error.message);

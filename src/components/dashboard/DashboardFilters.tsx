@@ -6,19 +6,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { WORK_TYPES } from "@/hooks/useQuotations";
+import { FOLLOW_UP_STATUSES, CUSTOMER_CATEGORIES } from "@/lib/quotationUtils";
 
 const THAI_MONTHS = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
-
-const FOLLOW_UP_STATUSES = [
-  "ติดต่อไม่ได้",
-  "รอส่งข้อมูลเพิ่ม",
-  "กำลังต่อรอง",
-  "นัดดูหน้างาน",
-  "ปิดการขายได้",
-  "ปิดการขายไม่ได้",
-];
-
-const CUSTOMER_CATEGORIES = ["Food", "CO", "รายย่อย"];
 
 interface DashboardFiltersProps {
   yearFilter: string;

@@ -86,6 +86,7 @@ export default function FollowUpHistory({ quotationId, salespersonName }: Props)
   };
 
   const handleDelete = async (id: string) => {
+    if (!window.confirm("ยืนยันการลบประวัติการติดตามนี้ใช่ไหม?")) return;
     const { error } = await supabase
       .from("quotation_follow_ups")
       .delete()

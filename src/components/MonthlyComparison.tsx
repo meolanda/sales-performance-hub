@@ -10,18 +10,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
-
-interface Quotation {
-  id: string;
-  document_number: string;
-  net_total: number;
-  status: string;
-  document_date: string | null;
-  created_at: string;
-  work_type: string | null;
-  customer_name: string | null;
-  follow_up_status?: string | null;
-}
+import { Quotation } from "@/hooks/useQuotations";
 
 interface MonthlyRow {
   key: string;

@@ -31,6 +31,8 @@ import { Label } from "@/components/ui/label";
 import { Search, ArrowUpDown, Pencil, Download, Upload, Users, X } from "lucide-react";
 import QuotationEditDialog from "@/components/QuotationEditDialog";
 import { useToast } from "@/hooks/use-toast";
+import { WORK_TYPES, isCorporate } from "@/hooks/useQuotations";
+import { parseDate, mapStatus, CUSTOMER_CATEGORIES } from "@/lib/quotationUtils";
 
 interface Quotation {
   id: string;
@@ -69,59 +71,6 @@ const priorityBadge = (p: string | null) => {
   return <Badge variant="outline" className="font-sarabun text-xs">{p}</Badge>;
 };
 
-const WORK_TYPES = [
-  "งานระบบ Hood",
-  "งานล้างแอร์",
-  "งาน PM",
-  "งานซ่อมแอร์",
-  "งานติดตั้ง",
-  "งานอื่นๆ",
-];
-
-function isCorporate(name: string | null): boolean {
-  if (!name) return false;
-  return /บริษัท|จำกัด|หจก|ห้างหุ้นส่วน|Co\.|Ltd|Corp|Inc/i.test(name);
-}
-
-function parseDate(value: unknown): string | null {
-  if (!value) return null;
-  if (typeof value === "number" && value > 1 && value < 100000) {
-    const excelEpoch = new Date(Date.UTC(1899, 11, 30));
-    const date = new Date(excelEpoch.getTime() + value * 86400000);
-    return date.toISOString().split("T")[0];
-  }
-  const str = String(value).trim();
-  if (!str) return null;
-  const slashMatch = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
-  if (slashMatch) {
-    const day = parseInt(slashMatch[1], 10);
-    const month = parseInt(slashMatch[2], 10);
-    let year = parseInt(slashMatch[3], 10);
-    if (year >= 2400) year -= 543;
-    if (year < 100) year += 2000;
-    const d = new Date(Date.UTC(year, month - 1, day));
-    if (!isNaN(d.getTime()) && d.getFullYear() > 1900) return d.toISOString().split("T")[0];
-  }
-  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
-  if (/^\d+$/.test(str)) {
-    const excelEpoch = new Date(Date.UTC(1899, 11, 30));
-    const date = new Date(excelEpoch.getTime() + Number(str) * 86400000);
-    return date.toISOString().split("T")[0];
-  }
-  const d = new Date(str);
-  if (!isNaN(d.getTime())) return d.toISOString().split("T")[0];
-  return null;
-}
-
-function mapStatus(thai: string): string {
-  const s = String(thai || "").trim();
-  if (s === "อนุมัติ") return "approved";
-  if (s === "รออนุมัติ") return "pending";
-  if (s === "ดำเนินการแล้ว") return "completed";
-  if (s === "ไม่อนุมัติ") return "rejected";
-  if (s === "ยกเลิก") return "cancelled";
-  return "pending";
-}
 
 export default function Quotations() {
   const [quotations, setQuotations] = useState<Quotation[]>([]);
@@ -149,6 +98,7 @@ export default function Quotations() {
   const [latestFollowUps, setLatestFollowUps] = useState<Map<string, { follow_date: string; result: string }>>(new Map());
 
   const fetchQuotations = useCallback(async () => {
+    setLoading(true);
     const allData: Quotation[] = [];
     let from = 0;
     const pageSize = 1000;
@@ -252,13 +202,17 @@ export default function Quotations() {
   };
 
   const exportCSV = useCallback(() => {
-    const headers = ["เลขที่เอกสาร", "วันที่", "ลูกค้า", "โปรเจกต์", "ประเภทงาน", "ยอดสุทธิ", "สถานะ", "ติดตาม", "Priority", "นัดถัดไป", "บันทึก"];
+    const headers = ["เลขที่เอกสาร", "วันที่", "ลูกค้า", "กลุ่มลูกค้า", "โปรเจกต์", "ประเภทงาน", "คนขาย", "ผู้ติดต่อ", "เบอร์โทร", "ยอดสุทธิ", "สถานะ", "ติดตาม", "Priority", "นัดถัดไป", "บันทึก"];
     const rows = filtered.map(q => [
       q.document_number,
       q.document_date || "",
       q.customer_name || "",
+      q.customer_category || "",
       q.project_name || "",
       q.work_type || "",
+      q.salesperson_name || "",
+      q.contact_name || "",
+      q.contact_phone || "",
       q.net_total,
       q.status,
       q.follow_up_status || "",
@@ -353,14 +307,26 @@ export default function Quotations() {
       .from("quotations")
       .update(updates)
       .in("id", ids);
-    setBulkUpdating(false);
     if (error) {
+      setBulkUpdating(false);
       toast({ title: "เกิดข้อผิดพลาด", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: `อัพเดทสถานะติดตาม ${ids.length} รายการสำเร็จ` });
-      setSelectedIds(new Set());
-      fetchQuotations();
+      return;
     }
+    // Write history record for each selected quotation
+    const today = new Date().toISOString().split("T")[0];
+    await supabase.from("quotation_follow_ups").insert(
+      ids.map((id) => ({
+        quotation_id: id,
+        follow_date: today,
+        followed_by: null,
+        result: `[Bulk] ${followUpStatus}`,
+        next_action: null,
+      }))
+    );
+    setBulkUpdating(false);
+    toast({ title: `อัพเดทสถานะติดตาม ${ids.length} รายการสำเร็จ` });
+    setSelectedIds(new Set());
+    fetchQuotations();
   };
 
   const handleBulkCategory = async (category: string) => {
@@ -545,9 +511,9 @@ export default function Quotations() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">ทุกกลุ่ม / All</SelectItem>
-            <SelectItem value="Food">Food</SelectItem>
-            <SelectItem value="CO">CO</SelectItem>
-            <SelectItem value="รายย่อย">รายย่อย</SelectItem>
+            {CUSTOMER_CATEGORIES.map((c) => (
+              <SelectItem key={c} value={c}>{c}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <Select value={salespersonFilter} onValueChange={setSalespersonFilter}>
@@ -757,9 +723,9 @@ export default function Quotations() {
               <SelectValue placeholder="กลุ่มลูกค้า" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Food">Food</SelectItem>
-              <SelectItem value="CO">CO</SelectItem>
-              <SelectItem value="รายย่อย">รายย่อย</SelectItem>
+              {CUSTOMER_CATEGORIES.map((c) => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              ))}
               <SelectItem value="clear">— ล้างค่า —</SelectItem>
             </SelectContent>
           </Select>
