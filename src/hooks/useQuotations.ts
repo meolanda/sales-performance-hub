@@ -150,6 +150,14 @@ export function useQuotations(options: UseQuotationsOptions = {}) {
 
   const hotLeadsValue = hotLeads.reduce((sum, q) => sum + Number(q.net_total || 0), 0);
 
+  // Win Rate = approved / (approved + rejected) — deals with a final outcome only
+  const winRate = useMemo(() => {
+    const closed = filtered.filter((q) => q.status === "approved" || q.status === "rejected");
+    if (closed.length === 0) return 0;
+    const won = closed.filter((q) => q.status === "approved").length;
+    return (won / closed.length) * 100;
+  }, [filtered]);
+
   return {
     quotations,
     filtered,
@@ -163,6 +171,7 @@ export function useQuotations(options: UseQuotationsOptions = {}) {
     hotLeadsValue,
     rejectedCount,
     rejectedValue,
+    winRate,
     refetch: fetchQuotations,
   };
 }

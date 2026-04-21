@@ -3,6 +3,7 @@ import { useQuotations } from "@/hooks/useQuotations";
 import { DashboardFilters } from "@/components/dashboard/DashboardFilters";
 import { DashboardKPICards } from "@/components/dashboard/DashboardKPICards";
 import { DashboardCharts } from "@/components/dashboard/DashboardCharts";
+import { SalespersonLeaderboard } from "@/components/dashboard/SalespersonLeaderboard";
 import { MonthlyComparison } from "@/components/MonthlyComparison";
 
 export default function Index() {
@@ -27,6 +28,7 @@ export default function Index() {
     hotLeadsValue,
     rejectedCount,
     rejectedValue,
+    winRate,
   } = useQuotations({
     yearFilter,
     monthFilter,
@@ -85,9 +87,12 @@ export default function Index() {
         pendingCount={pendingCount}
         rejectedCount={rejectedCount}
         rejectedValue={rejectedValue}
+        winRate={winRate}
       />
 
       <DashboardCharts quotations={filtered} />
+
+      <SalespersonLeaderboard quotations={filtered} />
 
       <MonthlyComparison quotations={filtered} />
     </div>
