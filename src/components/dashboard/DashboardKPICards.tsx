@@ -46,7 +46,7 @@ export function DashboardKPICards({
           <div className="text-2xl font-bold font-sarabun" style={{ color: "hsl(48, 70%, 40%)" }}>
             ฿{pipelineOpportunities.toLocaleString("th-TH", { minimumFractionDigits: 2 })}
           </div>
-          <p className="text-xs text-muted-foreground font-sarabun mt-1">Pending รอปิดดีล</p>
+          <p className="text-xs text-muted-foreground font-sarabun mt-1">ยอดรวมทุกใบเสนอราคา</p>
         </CardContent>
       </Card>
 

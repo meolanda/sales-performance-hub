@@ -123,7 +123,7 @@ export function useQuotations(options: UseQuotationsOptions = {}) {
   );
 
   const pipelineOpportunities = useMemo(
-    () => filtered.filter((q) => q.status === "pending").reduce((sum, q) => sum + Number(q.net_total || 0), 0),
+    () => filtered.reduce((sum, q) => sum + Number(q.net_total || 0), 0),
     [filtered]
   );
 
