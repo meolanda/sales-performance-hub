@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuotations } from "@/hooks/useQuotations";
 import { DashboardFilters } from "@/components/dashboard/DashboardFilters";
 import { DashboardKPICards } from "@/components/dashboard/DashboardKPICards";
@@ -11,8 +11,11 @@ export default function Index() {
   const [workTypeFilter, setWorkTypeFilter] = useState("all");
   const [customerTypeFilter, setCustomerTypeFilter] = useState("all");
   const [followUpFilter, setFollowUpFilter] = useState("all");
+  const [customerCategoryFilter, setCustomerCategoryFilter] = useState("all");
+  const [salespersonFilter, setSalespersonFilter] = useState("all");
 
   const {
+    quotations,
     filtered,
     loading,
     availableYears,
@@ -28,7 +31,15 @@ export default function Index() {
     workTypeFilter,
     customerTypeFilter,
     followUpFilter,
+    customerCategoryFilter,
+    salespersonFilter,
   });
+
+  const salespersonOptions = useMemo(() => {
+    const names = new Set<string>();
+    quotations.forEach((q) => { if (q.salesperson_name) names.add(q.salesperson_name.trim()); });
+    return Array.from(names).sort();
+  }, [quotations]);
 
   if (loading) {
     return (
@@ -50,12 +61,17 @@ export default function Index() {
         workTypeFilter={workTypeFilter}
         customerTypeFilter={customerTypeFilter}
         followUpFilter={followUpFilter}
+        customerCategoryFilter={customerCategoryFilter}
+        salespersonFilter={salespersonFilter}
+        salespersonOptions={salespersonOptions}
         availableYears={availableYears}
         onYearChange={setYearFilter}
         onMonthChange={setMonthFilter}
         onWorkTypeChange={setWorkTypeFilter}
         onCustomerTypeChange={setCustomerTypeFilter}
         onFollowUpChange={setFollowUpFilter}
+        onCustomerCategoryChange={setCustomerCategoryFilter}
+        onSalespersonChange={setSalespersonFilter}
       />
 
       <DashboardKPICards

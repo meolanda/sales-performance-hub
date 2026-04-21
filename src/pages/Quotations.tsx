@@ -146,6 +146,7 @@ export default function Quotations() {
   const [bulkSalesperson, setBulkSalesperson] = useState("");
   const [bulkContact, setBulkContact] = useState("");
   const [bulkUpdating, setBulkUpdating] = useState(false);
+  const [latestFollowUps, setLatestFollowUps] = useState<Map<string, { follow_date: string; result: string }>>(new Map());
 
   const fetchQuotations = useCallback(async () => {
     const allData: Quotation[] = [];
@@ -163,6 +164,21 @@ export default function Quotations() {
       from += pageSize;
     }
     setQuotations(allData);
+
+    const { data: followUps } = await supabase
+      .from("quotation_follow_ups")
+      .select("quotation_id, follow_date, result")
+      .order("follow_date", { ascending: false })
+      .order("created_at", { ascending: false });
+
+    if (followUps) {
+      const map = new Map<string, { follow_date: string; result: string }>();
+      for (const f of followUps) {
+        if (!map.has(f.quotation_id)) map.set(f.quotation_id, { follow_date: f.follow_date, result: f.result });
+      }
+      setLatestFollowUps(map);
+    }
+
     setLoading(false);
   }, []);
 
@@ -613,7 +629,7 @@ export default function Quotations() {
               </TableHead>
               <TableHead className="font-sarabun">สถานะ / Status</TableHead>
               <TableHead className="font-sarabun">ติดตาม / Follow-up</TableHead>
-              <TableHead className="font-sarabun">Priority</TableHead>
+              <TableHead className="font-sarabun">ติดตามล่าสุด</TableHead>
               <TableHead className="font-sarabun">นัดถัดไป / Next</TableHead>
               <TableHead className="font-sarabun w-10"></TableHead>
             </TableRow>
@@ -666,7 +682,18 @@ export default function Quotations() {
                         ? "ปิดการขายได้"
                         : q.follow_up_status || <span className="text-muted-foreground">—</span>}
                     </TableCell>
-                    <TableCell>{priorityBadge(q.sales_priority)}</TableCell>
+                    <TableCell className="font-sarabun text-xs max-w-[160px]">
+                      {(() => {
+                        const f = latestFollowUps.get(q.id);
+                        if (!f) return <span className="text-muted-foreground">—</span>;
+                        return (
+                          <div>
+                            <span className="text-primary font-medium">{f.follow_date}</span>
+                            <p className="text-muted-foreground truncate">{f.result}</p>
+                          </div>
+                        );
+                      })()}
+                    </TableCell>
                     <TableCell className="font-sarabun text-xs">
                       {q.next_follow_up_date || <span className="text-muted-foreground">—</span>}
                     </TableCell>

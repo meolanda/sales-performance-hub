@@ -43,6 +43,8 @@ export interface UseQuotationsOptions {
   workTypeFilter?: string;
   customerTypeFilter?: string;
   followUpFilter?: string;
+  customerCategoryFilter?: string;
+  salespersonFilter?: string;
 }
 
 export function useQuotations(options: UseQuotationsOptions = {}) {
@@ -52,6 +54,8 @@ export function useQuotations(options: UseQuotationsOptions = {}) {
     workTypeFilter = "all",
     customerTypeFilter = "all",
     followUpFilter = "all",
+    customerCategoryFilter = "all",
+    salespersonFilter = "all",
   } = options;
 
   const [quotations, setQuotations] = useState<Quotation[]>([]);
@@ -106,6 +110,8 @@ export function useQuotations(options: UseQuotationsOptions = {}) {
       if (customerTypeFilter === "corporate" && !isCorporate(q.customer_name)) return false;
       if (customerTypeFilter === "residential" && isCorporate(q.customer_name)) return false;
       if (followUpFilter !== "all" && q.follow_up_status !== followUpFilter) return false;
+      if (customerCategoryFilter !== "all" && q.customer_category !== customerCategoryFilter) return false;
+      if (salespersonFilter !== "all" && (q.salesperson_name?.trim() || "") !== salespersonFilter) return false;
       return true;
     });
   }, [quotations, yearFilter, monthFilter, workTypeFilter, customerTypeFilter]);

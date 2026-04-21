@@ -18,18 +18,25 @@ const FOLLOW_UP_STATUSES = [
   "ปิดการขายไม่ได้",
 ];
 
+const CUSTOMER_CATEGORIES = ["Food", "CO", "รายย่อย"];
+
 interface DashboardFiltersProps {
   yearFilter: string;
   monthFilter: string;
   workTypeFilter: string;
   customerTypeFilter: string;
   followUpFilter: string;
+  customerCategoryFilter: string;
+  salespersonFilter: string;
+  salespersonOptions: string[];
   availableYears: string[];
   onYearChange: (value: string) => void;
   onMonthChange: (value: string) => void;
   onWorkTypeChange: (value: string) => void;
   onCustomerTypeChange: (value: string) => void;
   onFollowUpChange: (value: string) => void;
+  onCustomerCategoryChange: (value: string) => void;
+  onSalespersonChange: (value: string) => void;
 }
 
 export function DashboardFilters({
@@ -38,12 +45,17 @@ export function DashboardFilters({
   workTypeFilter,
   customerTypeFilter,
   followUpFilter,
+  customerCategoryFilter,
+  salespersonFilter,
+  salespersonOptions,
   availableYears,
   onYearChange,
   onMonthChange,
   onWorkTypeChange,
   onCustomerTypeChange,
   onFollowUpChange,
+  onCustomerCategoryChange,
+  onSalespersonChange,
 }: DashboardFiltersProps) {
   return (
     <div className="flex flex-wrap gap-3">
@@ -103,6 +115,30 @@ export function DashboardFilters({
           <SelectItem value="all">ทุกสถานะ / All</SelectItem>
           {FOLLOW_UP_STATUSES.map((s) => (
             <SelectItem key={s} value={s}>{s}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select value={customerCategoryFilter} onValueChange={onCustomerCategoryChange}>
+        <SelectTrigger className="w-[160px] font-sarabun">
+          <SelectValue placeholder="กลุ่มลูกค้า" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">ทุกกลุ่ม / All</SelectItem>
+          {CUSTOMER_CATEGORIES.map((c) => (
+            <SelectItem key={c} value={c}>{c}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select value={salespersonFilter} onValueChange={onSalespersonChange}>
+        <SelectTrigger className="w-[160px] font-sarabun">
+          <SelectValue placeholder="คนขาย / Salesperson" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">ทุกคน / All</SelectItem>
+          {salespersonOptions.map((name) => (
+            <SelectItem key={name} value={name}>{name}</SelectItem>
           ))}
         </SelectContent>
       </Select>
