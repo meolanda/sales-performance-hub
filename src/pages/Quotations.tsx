@@ -184,8 +184,8 @@ export default function Quotations() {
     result.sort((a, b) => {
       let valA: number, valB: number;
       if (sortKey === "net_total") {
-        valA = Number(a.net_total || 0);
-        valB = Number(b.net_total || 0);
+        valA = Number(a.amount ?? a.net_total ?? 0);
+        valB = Number(b.amount ?? b.net_total ?? 0);
       } else {
         valA = calcAging(a.document_date, a.created_at);
         valB = calcAging(b.document_date, b.created_at);
@@ -635,7 +635,7 @@ export default function Quotations() {
                     <TableCell className="font-sarabun text-xs">{q.salesperson_name || <span className="text-muted-foreground">—</span>}</TableCell>
                     <TableCell className="font-sarabun text-xs">{q.work_type || "-"}</TableCell>
                     <TableCell className="font-sarabun text-right">
-                      ฿{Number(q.net_total).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+                      ฿{Number(q.amount ?? q.net_total ?? 0).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
                     </TableCell>
                     <TableCell>{agingBadge(aging, q.status)}</TableCell>
                     <TableCell>

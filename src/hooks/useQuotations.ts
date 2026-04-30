@@ -116,14 +116,16 @@ export function useQuotations(options: UseQuotationsOptions = {}) {
     });
   }, [quotations, yearFilter, monthFilter, workTypeFilter, customerTypeFilter, followUpFilter, customerCategoryFilter, salespersonFilter]);
 
+  const preVat = (q: Quotation) => Number(q.amount ?? q.net_total ?? 0);
+
   // KPI calculations
   const actualSales = useMemo(
-    () => filtered.filter((q) => q.status === "approved").reduce((sum, q) => sum + Number(q.net_total || 0), 0),
+    () => filtered.filter((q) => q.status === "approved").reduce((sum, q) => sum + preVat(q), 0),
     [filtered]
   );
 
   const pipelineOpportunities = useMemo(
-    () => filtered.reduce((sum, q) => sum + Number(q.net_total || 0), 0),
+    () => filtered.reduce((sum, q) => sum + preVat(q), 0),
     [filtered]
   );
 
@@ -131,7 +133,7 @@ export function useQuotations(options: UseQuotationsOptions = {}) {
   const pendingCount = filtered.filter((q) => q.status === "pending").length;
   const rejectedCount = filtered.filter((q) => q.status === "rejected").length;
   const rejectedValue = useMemo(
-    () => filtered.filter((q) => q.status === "rejected").reduce((sum, q) => sum + Number(q.net_total || 0), 0),
+    () => filtered.filter((q) => q.status === "rejected").reduce((sum, q) => sum + preVat(q), 0),
     [filtered]
   );
 
@@ -140,7 +142,7 @@ export function useQuotations(options: UseQuotationsOptions = {}) {
     const now = new Date();
     return filtered.filter((q) => {
       if (q.status !== "pending") return false;
-      if (Number(q.net_total || 0) <= 100000) return false;
+      if (preVat(q) <= 100000) return false;
       const ref = q.document_date || q.created_at;
       if (!ref) return false;
       const days = Math.floor((now.getTime() - new Date(ref).getTime()) / (1000 * 60 * 60 * 24));
@@ -148,7 +150,7 @@ export function useQuotations(options: UseQuotationsOptions = {}) {
     });
   }, [filtered]);
 
-  const hotLeadsValue = hotLeads.reduce((sum, q) => sum + Number(q.net_total || 0), 0);
+  const hotLeadsValue = hotLeads.reduce((sum, q) => sum + preVat(q), 0);
 
   // Win Rate = approved / (approved + rejected) — deals with a final outcome only
   const winRate = useMemo(() => {

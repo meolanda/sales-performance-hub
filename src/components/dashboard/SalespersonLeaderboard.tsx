@@ -27,7 +27,7 @@ export function SalespersonLeaderboard({ quotations }: SalespersonLeaderboardPro
       map[name].total++;
       if (q.status === "approved") {
         map[name].won++;
-        map[name].wonValue += Number(q.net_total || 0);
+        map[name].wonValue += Number(q.amount ?? q.net_total ?? 0);
       }
       if (q.status === "rejected") map[name].lost++;
     });

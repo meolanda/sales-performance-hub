@@ -74,7 +74,7 @@ export function MonthlyComparison({ quotations }: { quotations: Quotation[] }) {
 
       if (isWon) {
         map[key].won++;
-        map[key].wonValue += Number(q.net_total || 0);
+        map[key].wonValue += Number(q.amount ?? q.net_total ?? 0);
       }
     });
 

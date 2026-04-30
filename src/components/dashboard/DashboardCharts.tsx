@@ -71,7 +71,7 @@ export function DashboardCharts({ quotations }: DashboardChartsProps) {
     const map: Record<string, number> = {};
     quotations.forEach((q) => {
       const wt = q.work_type || "งานอื่นๆ";
-      map[wt] = (map[wt] || 0) + Number(q.net_total || 0);
+      map[wt] = (map[wt] || 0) + Number(q.amount ?? q.net_total ?? 0);
     });
     return WORK_TYPES.filter((t) => map[t]).map((name) => ({
       name,
@@ -104,7 +104,7 @@ export function DashboardCharts({ quotations }: DashboardChartsProps) {
         const days = Math.floor((now.getTime() - new Date(ref).getTime()) / (1000 * 60 * 60 * 24));
         const idx = days < 15 ? 0 : days < 30 ? 1 : days < 60 ? 2 : 3;
         counts[idx]++;
-        values[idx] += Number(q.net_total || 0);
+        values[idx] += Number(q.amount ?? q.net_total ?? 0);
       });
     return AGING_CONFIG.map((cfg, i) => ({ ...cfg, count: counts[i], value: values[i] }));
   }, [quotations]);
@@ -117,8 +117,8 @@ export function DashboardCharts({ quotations }: DashboardChartsProps) {
       if (!date) return;
       const month = date.substring(0, 7);
       if (!map[month]) map[month] = { approved: 0, pending: 0 };
-      if (q.status === "approved") map[month].approved += Number(q.net_total || 0);
-      if (q.status === "pending") map[month].pending += Number(q.net_total || 0);
+      if (q.status === "approved") map[month].approved += Number(q.amount ?? q.net_total ?? 0);
+      if (q.status === "pending") map[month].pending += Number(q.amount ?? q.net_total ?? 0);
     });
     return Object.entries(map)
       .sort(([a], [b]) => a.localeCompare(b))
