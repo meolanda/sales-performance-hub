@@ -202,7 +202,7 @@ export default function Quotations() {
   };
 
   const exportCSV = useCallback(() => {
-    const headers = ["เลขที่เอกสาร", "วันที่", "ลูกค้า", "กลุ่มลูกค้า", "โปรเจกต์", "ประเภทงาน", "คนขาย", "ผู้ติดต่อ", "เบอร์โทร", "ยอดสุทธิ", "สถานะ", "ติดตาม", "Priority", "นัดถัดไป", "บันทึก"];
+    const headers = ["เลขที่เอกสาร", "วันที่", "ลูกค้า", "กลุ่มลูกค้า", "โปรเจกต์", "ประเภทงาน", "คนขาย", "ผู้ติดต่อ", "เบอร์โทร", "ยอดก่อน VAT", "สถานะ", "ติดตาม", "Priority", "นัดถัดไป", "บันทึก"];
     const rows = filtered.map(q => [
       q.document_number,
       q.document_date || "",
@@ -213,7 +213,7 @@ export default function Quotations() {
       q.salesperson_name || "",
       q.contact_name || "",
       q.contact_phone || "",
-      q.net_total,
+      Number(q.amount ?? q.net_total ?? 0),
       q.status,
       q.follow_up_status || "",
       q.sales_priority || "",
@@ -583,7 +583,7 @@ export default function Quotations() {
               <TableHead className="font-sarabun">ประเภทงาน / Type</TableHead>
               <TableHead className="font-sarabun text-right">
                 <Button variant="ghost" size="sm" onClick={() => toggleSort("net_total")} className="font-sarabun h-auto p-0">
-                  ยอดสุทธิ / Net
+                  ยอดก่อน VAT
                   <ArrowUpDown className="ml-1 h-3 w-3" />
                 </Button>
               </TableHead>
