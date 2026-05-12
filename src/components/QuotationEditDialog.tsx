@@ -29,6 +29,7 @@ interface Quotation {
   document_number: string;
   customer_name: string | null;
   project_name: string | null;
+  amount: number | null;
   net_total: number;
   status: string | null;
   follow_up_status: string | null;
@@ -138,7 +139,7 @@ export default function QuotationEditDialog({ quotation, open, onOpenChange, onS
 
         <div className="space-y-4 py-2">
           <div className="text-sm text-muted-foreground font-sarabun">
-            {quotation?.customer_name} • {quotation?.project_name} • ฿{Number(quotation?.net_total || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+            {quotation?.customer_name} • {quotation?.project_name} • ฿{Number(quotation?.amount ?? quotation?.net_total ?? 0).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
           </div>
 
           <div className="space-y-2">
