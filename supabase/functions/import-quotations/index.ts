@@ -70,7 +70,7 @@ Deno.serve(async (req: Request) => {
         const statusMap: Record<string, string> = {
           "อนุมัติ": "approved",
           "รออนุมัติ": "pending",
-          "ดำเนินการแล้ว": "completed",
+          "ดำเนินการแล้ว": "approved",
           "ไม่อนุมัติ": "rejected",
           "ยกเลิก": "cancelled",
         };

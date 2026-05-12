@@ -60,7 +60,7 @@ export function mapStatus(thai: string): string {
   const s = String(thai || "").trim();
   if (s === "อนุมัติ") return "approved";
   if (s === "รออนุมัติ") return "pending";
-  if (s === "ดำเนินการแล้ว") return "completed";
+  if (s === "ดำเนินการแล้ว") return "approved";
   if (s === "ไม่อนุมัติ") return "rejected";
   if (s === "ยกเลิก") return "cancelled";
   return "pending";
