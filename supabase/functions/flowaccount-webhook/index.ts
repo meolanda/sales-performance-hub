@@ -69,33 +69,70 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const mappedData = {
-      document_number: data.documentNumber,
-      document_date: data.documentDate || null,
-      customer_name: data.customerName || null,
-      project_name: data.projectName || null,
-      amount: data.totalAmount ?? 0,
-      vat: data.vatAmount ?? 0,
-      net_total: data.netTotal ?? 0,
-      status: data.status || "pending",
-      raw_payload: payload as unknown as Record<string, unknown>,
-    };
-
-    const { error } = await supabase
+    // Check if quotation already exists
+    const { data: existing } = await supabase
       .from("quotations")
-      .upsert(mappedData, { onConflict: "document_number" });
+      .select("document_number, status, follow_up_status")
+      .eq("document_number", data.documentNumber)
+      .maybeSingle();
 
-    if (error) {
-      await supabase.from("webhook_logs").insert({
-        event_type: eventType,
-        payload: payload as unknown as Record<string, unknown>,
-        status: "error",
-        error_message: error.message,
-      });
-      return new Response(
-        JSON.stringify({ error: error.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (existing) {
+      // UPDATE existing — only accounting fields, NEVER overwrite sales team's status/follow_up
+      const { error } = await supabase
+        .from("quotations")
+        .update({
+          document_date: data.documentDate || null,
+          customer_name: data.customerName || null,
+          project_name: data.projectName || null,
+          amount: data.totalAmount ?? 0,
+          vat: data.vatAmount ?? 0,
+          net_total: data.netTotal ?? 0,
+          raw_payload: payload as unknown as Record<string, unknown>,
+        })
+        .eq("document_number", data.documentNumber);
+
+      if (error) {
+        await supabase.from("webhook_logs").insert({
+          event_type: eventType,
+          payload: payload as unknown as Record<string, unknown>,
+          status: "error",
+          error_message: error.message,
+        });
+        return new Response(
+          JSON.stringify({ error: error.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    } else {
+      // INSERT new quotation — use FlowAccount status as initial value
+      const mappedData = {
+        document_number: data.documentNumber,
+        document_date: data.documentDate || null,
+        customer_name: data.customerName || null,
+        project_name: data.projectName || null,
+        amount: data.totalAmount ?? 0,
+        vat: data.vatAmount ?? 0,
+        net_total: data.netTotal ?? 0,
+        status: data.status || "pending",
+        raw_payload: payload as unknown as Record<string, unknown>,
+      };
+
+      const { error } = await supabase
+        .from("quotations")
+        .insert(mappedData);
+
+      if (error) {
+        await supabase.from("webhook_logs").insert({
+          event_type: eventType,
+          payload: payload as unknown as Record<string, unknown>,
+          status: "error",
+          error_message: error.message,
+        });
+        return new Response(
+          JSON.stringify({ error: error.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     // Update log status to success
