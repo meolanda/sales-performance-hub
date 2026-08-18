@@ -3,7 +3,13 @@
     "allow": [
       "mcp__ac-parts-filesystem__list_directory",
       "Bash(find 'D:\\\\เขียน APP\\\\sales-performance-hub-main\\\\sales-performance-hub-main' -type f \\\\\\(-name *.sql -o -name *.md \\\\\\))",
-      "Bash(ls \"C:\\\\Users\\\\Wichaya\\\\.claude\\\\projects\\\\D--------APP-sales-performance-hub-main-sales-performance-hub-main\\\\memory\"\" 2>/dev/null || echo \"NOT_EXISTS \")"
+      "Bash(ls \"C:\\\\Users\\\\Wichaya\\\\.claude\\\\projects\\\\D--------APP-sales-performance-hub-main-sales-performance-hub-main\\\\memory\"\" 2>/dev/null || echo \"NOT_EXISTS \")",
+      "mcp__visualize__read_me",
+      "mcp__visualize__show_widget",
+      "Bash(findstr /i \"lovable\\\\|gptengineer\\\\|homepage\\\\|name\")",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)"
     ]
   }
 }

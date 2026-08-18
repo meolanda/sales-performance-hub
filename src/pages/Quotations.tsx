@@ -28,6 +28,12 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Search, ArrowUpDown, Pencil, Download, Upload, Users, X } from "lucide-react";
 import QuotationEditDialog from "@/components/QuotationEditDialog";
 import { useToast } from "@/hooks/use-toast";
@@ -626,7 +632,23 @@ export default function Quotations() {
                     </TableCell>
                     <TableCell className="font-sarabun font-medium">{q.document_number}</TableCell>
                     <TableCell className="font-sarabun">{q.document_date || "-"}</TableCell>
-                    <TableCell className="font-sarabun max-w-[150px] truncate">{q.customer_name || "-"}</TableCell>
+                    <TableCell className="font-sarabun max-w-[150px]">
+                      <TooltipProvider delayDuration={300}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="block truncate cursor-default">
+                              {q.customer_name || "-"}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="max-w-[320px] font-sarabun text-sm">
+                            <p className="font-medium">{q.customer_name || "-"}</p>
+                            {q.project_name && (
+                              <p className="text-muted-foreground text-xs mt-0.5">📋 {q.project_name}</p>
+                            )}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </TableCell>
                     <TableCell className="font-sarabun text-xs">
                       {q.customer_category ? (
                         <Badge variant="outline" className="font-sarabun text-xs">{q.customer_category}</Badge>
