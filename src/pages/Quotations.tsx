@@ -623,8 +623,12 @@ export default function Quotations() {
               filtered.map((q) => {
                 const aging = calcAging(q.document_date, q.created_at);
                 return (
-                  <TableRow key={q.id} className={`${q.status === "pending" && aging > 30 ? "bg-destructive/5" : ""} ${selectedIds.has(q.id) ? "bg-primary/5" : ""}`}>
-                    <TableCell>
+                  <TableRow
+                    key={q.id}
+                    className={`cursor-pointer ${q.status === "pending" && aging > 30 ? "bg-destructive/5" : ""} ${selectedIds.has(q.id) ? "bg-primary/5" : ""}`}
+                    onClick={() => openEdit(q)}
+                  >
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <Checkbox
                         checked={selectedIds.has(q.id)}
                         onCheckedChange={(checked) => handleSelectOne(q.id, !!checked)}
@@ -675,17 +679,27 @@ export default function Quotations() {
                         const f = latestFollowUps.get(q.id);
                         if (!f) return <span className="text-muted-foreground">—</span>;
                         return (
-                          <div>
-                            <span className="text-primary font-medium">{f.follow_date}</span>
-                            <p className="text-muted-foreground truncate">{f.result}</p>
-                          </div>
+                          <TooltipProvider delayDuration={300}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="cursor-default">
+                                  <span className="text-primary font-medium">{f.follow_date}</span>
+                                  <p className="text-muted-foreground truncate">{f.result}</p>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent side="left" className="max-w-[380px] font-sarabun text-sm p-3">
+                                <p className="font-semibold text-primary">{f.follow_date}</p>
+                                <p className="mt-1 leading-relaxed">{f.result}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         );
                       })()}
                     </TableCell>
                     <TableCell className="font-sarabun text-xs">
                       {q.next_follow_up_date || <span className="text-muted-foreground">—</span>}
                     </TableCell>
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(q)}>
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
