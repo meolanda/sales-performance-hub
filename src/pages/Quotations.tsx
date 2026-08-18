@@ -640,10 +640,10 @@ export default function Quotations() {
                               {q.customer_name || "-"}
                             </span>
                           </TooltipTrigger>
-                          <TooltipContent side="right" className="max-w-[320px] font-sarabun text-sm">
-                            <p className="font-medium">{q.customer_name || "-"}</p>
+                          <TooltipContent side="right" className="max-w-[480px] font-sarabun text-base p-3">
+                            <p className="font-semibold text-base leading-snug">{q.customer_name || "-"}</p>
                             {q.project_name && (
-                              <p className="text-muted-foreground text-xs mt-0.5">📋 {q.project_name}</p>
+                              <p className="text-muted-foreground text-sm mt-1">📋 {q.project_name}</p>
                             )}
                           </TooltipContent>
                         </Tooltip>
